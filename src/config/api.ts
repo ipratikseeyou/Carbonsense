@@ -1,8 +1,7 @@
-
 // API Configuration
 export const API_CONFIG = {
   // Backend URL - uses environment variable or AWS Lambda as fallback
-  BACKEND_URL: import.meta.env.VITE_API_URL || 'https://s8fm2o7873.execute-api.us-east-1.amazonaws.com/Prod',
+  BACKEND_URL: import.meta.env.VITE_API_URL || 'https://kvu6v1r4mk.execute-api.us-east-1.amazonaws.com/Pro',
   
   // API Endpoints
   ENDPOINTS: {
