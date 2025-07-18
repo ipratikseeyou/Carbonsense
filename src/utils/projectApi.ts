@@ -9,11 +9,14 @@ export interface AnalysisResult {
   carbon_estimate?: number;
   recommendations?: string;
   confidence_score?: number;
+  analysis_id?: string;
+  processed_at?: string;
 }
 
 export interface ApiError {
   detail?: Array<{ msg: string; type: string }> | string;
   message?: string;
+  error?: string;
 }
 
 const validateProjectId = (projectId: string | undefined): string => {
@@ -29,12 +32,21 @@ const validateProjectId = (projectId: string | undefined): string => {
 };
 
 const parseApiError = (error: unknown): string => {
+  console.error('API Error details:', error);
+  
   if (error instanceof Error) {
+    if (error.name === 'AbortError') {
+      return 'Request timed out. Please try again.';
+    }
     return error.message;
   }
   
   if (typeof error === 'object' && error !== null) {
     const apiError = error as ApiError;
+    
+    if (apiError.error) {
+      return apiError.error;
+    }
     
     if (Array.isArray(apiError.detail)) {
       return apiError.detail[0]?.msg || 'An error occurred with the request';
@@ -49,7 +61,7 @@ const parseApiError = (error: unknown): string => {
     }
   }
   
-  return 'An unexpected error occurred. Please try again.';
+  return 'An unexpected error occurred. Please check your connection and try again.';
 };
 
 export const analyzeProject = async (
@@ -61,6 +73,7 @@ export const analyzeProject = async (
   try {
     // Validate project ID first
     const validProjectId = validateProjectId(projectId);
+    console.log(`Starting analysis for project: ${validProjectId}`);
     onStart();
     
     const response = await makeApiRequest(
@@ -72,8 +85,9 @@ export const analyzeProject = async (
       let errorData: ApiError;
       try {
         errorData = await response.json();
+        console.error('Analysis API error response:', errorData);
       } catch {
-        throw new Error(`Analysis failed: ${response.statusText}`);
+        throw new Error(`Analysis failed: ${response.status} ${response.statusText}`);
       }
       
       const errorMessage = parseApiError(errorData);
@@ -81,6 +95,7 @@ export const analyzeProject = async (
     }
     
     const result: AnalysisResult = await response.json();
+    console.log('Analysis result:', result);
     onComplete(result);
     
     toast({
@@ -112,6 +127,7 @@ export const downloadProjectReport = async (
   try {
     // Validate project ID first
     const validProjectId = validateProjectId(projectId);
+    console.log(`Starting report download for project: ${validProjectId}`);
     onStart();
     
     const response = await makeApiRequest(
@@ -122,13 +138,18 @@ export const downloadProjectReport = async (
       let errorData: ApiError;
       try {
         errorData = await response.json();
+        console.error('Download API error response:', errorData);
       } catch {
-        throw new Error(`Report generation failed: ${response.statusText}`);
+        throw new Error(`Report generation failed: ${response.status} ${response.statusText}`);
       }
       
       const errorMessage = parseApiError(errorData);
       throw new Error(errorMessage);
     }
+    
+    // Handle PDF download
+    const contentType = response.headers.get('content-type');
+    console.log('Response content type:', contentType);
     
     const blob = await response.blob();
     const url = window.URL.createObjectURL(blob);
