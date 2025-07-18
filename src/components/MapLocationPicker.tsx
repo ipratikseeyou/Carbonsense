@@ -1,11 +1,12 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { MapPin, ToggleLeft, ToggleRight } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface MapLocationPickerProps {
   onLocationSelect: (lat: number, lng: number) => void;
@@ -26,12 +27,38 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
   const [showManualInput, setShowManualInput] = useState(false);
   const [coordinates, setCoordinates] = useState<string>(`${initialLocation.lat},${initialLocation.lng}`);
   const [isMapReady, setIsMapReady] = useState(false);
+  const [isLoadingToken, setIsLoadingToken] = useState(true);
+  const [tokenError, setTokenError] = useState<string>('');
 
+  // Fetch Mapbox token from edge function on component mount
   useEffect(() => {
-    const storedToken = localStorage.getItem('mapbox_token');
-    if (storedToken) {
-      setMapboxToken(storedToken);
-    }
+    const fetchMapboxToken = async () => {
+      try {
+        setIsLoadingToken(true);
+        setTokenError('');
+        
+        const { data, error } = await supabase.functions.invoke('get-mapbox-token');
+        
+        if (error) {
+          console.error('Error fetching Mapbox token:', error);
+          setTokenError('Failed to load map configuration. Please try again.');
+          return;
+        }
+        
+        if (data?.token) {
+          setMapboxToken(data.token);
+        } else {
+          setTokenError('Map configuration not available.');
+        }
+      } catch (error) {
+        console.error('Error fetching Mapbox token:', error);
+        setTokenError('Failed to load map configuration. Please try again.');
+      } finally {
+        setIsLoadingToken(false);
+      }
+    };
+
+    fetchMapboxToken();
   }, []);
 
   useEffect(() => {
@@ -89,11 +116,6 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
     };
   }, [mapboxToken, initialLocation, onLocationSelect]);
 
-  const handleTokenSave = () => {
-    localStorage.setItem('mapbox_token', mapboxToken);
-    window.location.reload();
-  };
-
   const handleManualCoordsSubmit = () => {
     const coords = coordinates.split(',');
     if (coords.length === 2) {
@@ -111,36 +133,47 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
     }
   };
 
-  if (!mapboxToken) {
+  // Show loading state
+  if (isLoadingToken) {
     return (
-      <div className={`p-6 border-2 border-dashed border-border rounded-lg ${className}`}>
-        <div className="text-center space-y-4">
-          <MapPin className="h-12 w-12 text-muted-foreground mx-auto" />
-          <h3 className="text-lg font-semibold">Map Configuration Required</h3>
-          <p className="text-muted-foreground">
-            To use the interactive map, please enter your Mapbox public token.
-            Get your token from{' '}
-            <a 
-              href="https://mapbox.com" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-satellite-blue hover:underline"
-            >
-              mapbox.com
-            </a>
-          </p>
-          <div className="space-y-2 max-w-md mx-auto">
-            <Input
-              type="text"
-              placeholder="pk.ey..."
-              value={mapboxToken}
-              onChange={(e) => setMapboxToken(e.target.value)}
-            />
-            <Button onClick={handleTokenSave} className="w-full">
-              Save Token
+      <div className={`space-y-4 ${className}`}>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MapPin className="h-5 w-5" />
+              Loading Map...
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (tokenError || !mapboxToken) {
+    return (
+      <div className={`space-y-4 ${className}`}>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MapPin className="h-5 w-5" />
+              Map Configuration Error
+            </CardTitle>
+            <CardDescription>
+              {tokenError || 'Map configuration is not available.'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={() => window.location.reload()}>
+              Retry
             </Button>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
