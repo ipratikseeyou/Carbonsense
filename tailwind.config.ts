@@ -26,7 +26,26 @@ export default {
 				foreground: 'hsl(var(--foreground))',
 				primary: {
 					DEFAULT: 'hsl(var(--primary))',
-					foreground: 'hsl(var(--primary-foreground))'
+					foreground: 'hsl(var(--primary-foreground))',
+					glow: 'hsl(var(--primary-glow))'
+				},
+				earth: {
+					green: 'hsl(var(--earth-green))',
+					'green-light': 'hsl(var(--earth-green-light))',
+				},
+				forest: {
+					deep: 'hsl(var(--forest-deep))',
+				},
+				carbon: {
+					positive: 'hsl(var(--carbon-positive))',
+					negative: 'hsl(var(--carbon-negative))',
+				},
+				satellite: {
+					blue: 'hsl(var(--satellite-blue))',
+					glow: 'hsl(var(--orbit-glow))',
+				},
+				space: {
+					dark: 'hsl(var(--space-dark))',
 				},
 				secondary: {
 					DEFAULT: 'hsl(var(--secondary))',
@@ -62,6 +81,17 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				}
+			},
+			backgroundImage: {
+				'gradient-earth-sky': 'var(--gradient-earth-sky)',
+				'gradient-satellite': 'var(--gradient-satellite)',
+				'gradient-hero': 'var(--gradient-hero)',
+				'gradient-carbon': 'var(--gradient-carbon)',
+			},
+			boxShadow: {
+				'satellite': 'var(--shadow-satellite)',
+				'earth': 'var(--shadow-earth)',
+				'glow': 'var(--glow-monitoring)',
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

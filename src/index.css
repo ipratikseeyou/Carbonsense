@@ -2,39 +2,73 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+/* CarbonSense Design System - Earth & Satellite Monitoring Theme
 All colors MUST be HSL.
 */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-
-    --primary: 222.2 47.4% 11.2%;
+    /* Core Earth & Sky Theme */
+    --background: 210 40% 98%;
+    --foreground: 215 25% 15%;
+    
+    /* Satellite Tech Blue */
+    --primary: 212 85% 45%;
     --primary-foreground: 210 40% 98%;
+    --primary-glow: 212 85% 65%;
+    
+    /* Earth Green System */
+    --earth-green: 142 70% 35%;
+    --earth-green-light: 142 60% 55%;
+    --forest-deep: 140 85% 25%;
+    
+    /* Carbon Monitoring */
+    --carbon-positive: 120 65% 40%;
+    --carbon-negative: 0 75% 50%;
+    --monitoring-amber: 38 85% 55%;
+    
+    /* Satellite UI */
+    --satellite-blue: 212 85% 45%;
+    --space-dark: 220 25% 15%;
+    --orbit-glow: 212 85% 65%;
+    
+    /* Gradients */
+    --gradient-earth-sky: linear-gradient(135deg, hsl(142 70% 35%), hsl(212 85% 45%));
+    --gradient-satellite: linear-gradient(145deg, hsl(212 85% 45%), hsl(212 85% 65%));
+    --gradient-hero: linear-gradient(180deg, hsl(212 25% 8%), hsl(212 85% 15%));
+    --gradient-carbon: linear-gradient(90deg, hsl(142 70% 35%), hsl(120 65% 40%));
+    
+    /* Shadows & Effects */
+    --shadow-satellite: 0 8px 32px hsl(212 85% 45% / 0.3);
+    --shadow-earth: 0 4px 20px hsl(142 70% 35% / 0.25);
+    --glow-monitoring: 0 0 20px hsl(212 85% 65% / 0.4);
+    
+    /* Animations */
+    --transition-smooth: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-satellite: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Semantic UI Components */
+    --card: 210 30% 96%;
+    --card-foreground: 215 25% 15%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --popover: 210 40% 98%;
+    --popover-foreground: 215 25% 15%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --secondary: 142 45% 90%;
+    --secondary-foreground: 140 85% 25%;
 
-    --destructive: 0 84.2% 60.2%;
+    --muted: 210 20% 92%;
+    --muted-foreground: 215 15% 45%;
+
+    --accent: 212 60% 85%;
+    --accent-foreground: 212 85% 25%;
+
+    --destructive: 0 75% 50%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 210 20% 88%;
+    --input: 210 25% 90%;
+    --ring: 212 85% 45%;
 
     --radius: 0.5rem;
 
@@ -56,33 +90,35 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    /* Dark Mode - Space Monitoring Theme */
+    --background: 220 25% 8%;
+    --foreground: 210 30% 92%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 220 20% 12%;
+    --card-foreground: 210 30% 92%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 220 25% 8%;
+    --popover-foreground: 210 30% 92%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 212 85% 55%;
+    --primary-foreground: 220 25% 8%;
+    --primary-glow: 212 85% 75%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 220 15% 18%;
+    --secondary-foreground: 142 60% 70%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 220 15% 15%;
+    --muted-foreground: 215 20% 65%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 220 20% 20%;
+    --accent-foreground: 212 85% 75%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 75% 55%;
+    --destructive-foreground: 210 30% 92%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --border: 220 15% 18%;
+    --input: 220 15% 18%;
+    --ring: 212 85% 55%;
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
