@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,12 +6,18 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Navigation from '@/components/Navigation';
-import { ArrowLeft, MapPin, Calendar, DollarSign, Leaf, Satellite, TrendingUp } from 'lucide-react';
-import { toast } from '@/components/ui/use-toast';
+import { ArrowLeft, MapPin, Calendar, DollarSign, Leaf, Satellite, TrendingUp, BarChart3, Download, Loader2 } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 const ProjectDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<any>(null);
+
+  // FastAPI backend URL - configure this based on your environment
+  const BACKEND_URL = 'http://localhost:8002';
 
   const { data: project, isLoading, error } = useQuery({
     queryKey: ['project', id],
@@ -47,6 +52,78 @@ const ProjectDetails = () => {
     },
     enabled: !!id,
   });
+
+  const analyzeProject = async (projectId: string) => {
+    try {
+      setIsAnalyzing(true);
+      
+      const response = await fetch(`${BACKEND_URL}/projects/${projectId}/analyze`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Analysis failed: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      setAnalysisResult(result);
+      
+      toast({
+        title: 'Analysis Complete!',
+        description: 'Project analysis has been completed successfully.',
+      });
+      
+    } catch (error) {
+      console.error('Error analyzing project:', error);
+      toast({
+        title: 'Analysis Failed',
+        description: 'Failed to analyze project. Make sure your backend is running.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const downloadReport = async (projectId: string) => {
+    try {
+      setIsDownloading(true);
+      
+      const response = await fetch(`${BACKEND_URL}/projects/${projectId}/report`);
+      
+      if (!response.ok) {
+        throw new Error(`Report generation failed: ${response.statusText}`);
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `project-${projectId}-report.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: 'Report Downloaded!',
+        description: 'Project report has been downloaded successfully.',
+      });
+      
+    } catch (error) {
+      console.error('Error downloading report:', error);
+      toast({
+        title: 'Download Failed',
+        description: 'Failed to download report. Make sure your backend is running.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   const handleDelete = async () => {
     if (!project || !window.confirm('Are you sure you want to delete this project?')) return;
@@ -187,6 +264,49 @@ const ProjectDetails = () => {
               </CardContent>
             </Card>
 
+            {/* Analysis Results */}
+            {analysisResult && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5" />
+                    Analysis Results
+                  </CardTitle>
+                  <CardDescription>
+                    Latest AI-powered analysis of this project
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      {analysisResult.ndvi && (
+                        <div className="p-3 bg-green-50 rounded-lg">
+                          <div className="text-sm text-muted-foreground">NDVI Score</div>
+                          <div className="text-2xl font-bold text-green-600">
+                            {Number(analysisResult.ndvi).toFixed(3)}
+                          </div>
+                        </div>
+                      )}
+                      {analysisResult.forest_cover && (
+                        <div className="p-3 bg-blue-50 rounded-lg">
+                          <div className="text-sm text-muted-foreground">Forest Cover</div>
+                          <div className="text-2xl font-bold text-blue-600">
+                            {Number(analysisResult.forest_cover).toFixed(1)}%
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    {analysisResult.recommendations && (
+                      <div className="p-3 bg-muted/50 rounded-lg">
+                        <div className="text-sm font-medium mb-2">Recommendations</div>
+                        <p className="text-sm text-muted-foreground">{analysisResult.recommendations}</p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Carbon Measurements */}
             {carbonData && carbonData.length > 0 && (
               <Card>
@@ -254,6 +374,44 @@ const ProjectDetails = () => {
                 <CardTitle>Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
+                <Button 
+                  onClick={() => analyzeProject(project.id)}
+                  disabled={isAnalyzing}
+                  variant="satellite"
+                  className="w-full"
+                >
+                  {isAnalyzing ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Analyzing...
+                    </>
+                  ) : (
+                    <>
+                      <BarChart3 className="h-4 w-4 mr-2" />
+                      Analyze Project
+                    </>
+                  )}
+                </Button>
+
+                <Button 
+                  onClick={() => downloadReport(project.id)}
+                  disabled={isDownloading}
+                  variant="earth"
+                  className="w-full"
+                >
+                  {isDownloading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="h-4 w-4 mr-2" />
+                      Download Report
+                    </>
+                  )}
+                </Button>
+
                 <Button asChild variant="outline" className="w-full">
                   <Link to={`/projects/${project.id}/edit`}>
                     Edit Project

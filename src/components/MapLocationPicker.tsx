@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -61,6 +62,25 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
     fetchMapboxToken();
   }, []);
 
+  // Smooth marker movement function
+  const smoothMoveMarker = (lat: number, lng: number) => {
+    if (marker.current && map.current) {
+      // Animate marker movement
+      marker.current.setLngLat([lng, lat]);
+      
+      // Smooth camera movement to follow marker
+      map.current.easeTo({
+        center: [lng, lat],
+        duration: 500,
+        easing: (t) => t * (2 - t) // ease-out function
+      });
+      
+      // Update coordinates display
+      setCoordinates(`${lat.toFixed(6)},${lng.toFixed(6)}`);
+      onLocationSelect(lat, lng);
+    }
+  };
+
   useEffect(() => {
     if (!mapContainer.current || !mapboxToken) return;
 
@@ -85,22 +105,24 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
         .setLngLat([initialLocation.lng, initialLocation.lat])
         .addTo(map.current);
 
-      // Handle marker drag
+      // Handle marker drag with smooth animation
       marker.current.on('dragend', () => {
         if (marker.current) {
           const lngLat = marker.current.getLngLat();
-          onLocationSelect(lngLat.lat, lngLat.lng);
+          // Smooth camera follow during drag
+          map.current?.easeTo({
+            center: [lngLat.lng, lngLat.lat],
+            duration: 300,
+            easing: (t) => t * (2 - t)
+          });
           setCoordinates(`${lngLat.lat.toFixed(6)},${lngLat.lng.toFixed(6)}`);
+          onLocationSelect(lngLat.lat, lngLat.lng);
         }
       });
 
-      // Handle map click
+      // Handle map click with smooth marker movement
       map.current.on('click', (e) => {
-        if (marker.current) {
-          marker.current.setLngLat(e.lngLat);
-          onLocationSelect(e.lngLat.lat, e.lngLat.lng);
-          setCoordinates(`${e.lngLat.lat.toFixed(6)},${e.lngLat.lng.toFixed(6)}`);
-        }
+        smoothMoveMarker(e.lngLat.lat, e.lngLat.lng);
       });
 
       map.current.on('load', () => {
@@ -123,12 +145,17 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
       const lng = parseFloat(coords[1].trim());
       
       if (!isNaN(lat) && !isNaN(lng)) {
-        onLocationSelect(lat, lng);
+        // Use smooth movement for manual input too
         if (marker.current && map.current) {
           marker.current.setLngLat([lng, lat]);
-          map.current.setCenter([lng, lat]);
-          map.current.setZoom(10);
+          map.current.easeTo({
+            center: [lng, lat],
+            zoom: 10,
+            duration: 800,
+            easing: (t) => t * (2 - t)
+          });
         }
+        onLocationSelect(lat, lng);
       }
     }
   };
@@ -154,7 +181,6 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
     );
   }
 
-  // Show error state
   if (tokenError || !mapboxToken) {
     return (
       <div className={`space-y-4 ${className}`}>
