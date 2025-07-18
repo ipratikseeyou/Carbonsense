@@ -164,7 +164,7 @@
   
   /* Premium button effects */
   .btn-premium {
-    @apply relative overflow-hidden transition-premium;
+    @apply relative overflow-hidden transition-all duration-300;
   }
   
   .btn-premium::before {
