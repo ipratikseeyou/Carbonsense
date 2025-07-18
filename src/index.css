@@ -1,124 +1,118 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* CarbonSense Design System - Earth & Satellite Monitoring Theme
-All colors MUST be HSL.
-*/
+/* CarbonSense Premium Design System - Ultra-Modern Carbon Monitoring Platform */
 
 @layer base {
   :root {
-    /* Core Earth & Sky Theme */
+    /* Premium Color Palette - Deep Space & Earth Tones */
     --background: 210 40% 98%;
-    --foreground: 215 25% 15%;
+    --foreground: 215 30% 8%;
     
-    /* Satellite Tech Blue */
+    /* Primary Palette - Enhanced Satellite Tech */
     --primary: 212 85% 45%;
     --primary-foreground: 210 40% 98%;
     --primary-glow: 212 85% 65%;
     
-    /* Earth Green System */
+    /* Premium Deep Space Navy */
+    --space-navy: 220 80% 8%;
+    --space-navy-light: 220 60% 12%;
+    
+    /* Earth System - Enhanced */
     --earth-green: 142 70% 35%;
     --earth-green-light: 142 60% 55%;
+    --earth-teal: 174 80% 25%;
+    --earth-teal-light: 174 65% 35%;
     --forest-deep: 140 85% 25%;
     
-    /* Carbon Monitoring */
+    /* Premium Accent Colors */
+    --copper-accent: 25 85% 35%;
+    --copper-light: 25 75% 45%;
+    --gold-warm: 38 95% 50%;
+    --gold-light: 38 85% 60%;
+    
+    /* Carbon Monitoring Enhanced */
     --carbon-positive: 120 65% 40%;
     --carbon-negative: 0 75% 50%;
     --monitoring-amber: 38 85% 55%;
     
-    /* Satellite UI */
-    --satellite-blue: 212 85% 45%;
-    --space-dark: 220 25% 15%;
-    --orbit-glow: 212 85% 65%;
+    /* Glass-morphism & Premium Effects */
+    --glass-bg: 210 40% 98% / 0.1;
+    --glass-border: 210 30% 80% / 0.2;
+    --premium-shadow: 220 25% 15% / 0.1;
+    --premium-glow: 212 85% 65% / 0.3;
     
-    /* Gradients */
-    --gradient-earth-sky: linear-gradient(135deg, hsl(142 70% 35%), hsl(212 85% 45%));
-    --gradient-satellite: linear-gradient(145deg, hsl(212 85% 45%), hsl(212 85% 65%));
-    --gradient-hero: linear-gradient(180deg, hsl(212 25% 8%), hsl(212 85% 15%));
-    --gradient-carbon: linear-gradient(90deg, hsl(142 70% 35%), hsl(120 65% 40%));
+    /* Enhanced Gradients */
+    --gradient-hero: linear-gradient(135deg, hsl(220 80% 8%), hsl(220 60% 12%), hsl(212 85% 15%));
+    --gradient-earth-premium: linear-gradient(135deg, hsl(142 70% 35%), hsl(174 80% 25%), hsl(212 85% 45%));
+    --gradient-copper: linear-gradient(135deg, hsl(25 85% 35%), hsl(38 95% 50%));
+    --gradient-glass: linear-gradient(135deg, hsl(210 40% 98% / 0.1), hsl(210 30% 90% / 0.2));
     
-    /* Shadows & Effects */
-    --shadow-satellite: 0 8px 32px hsl(212 85% 45% / 0.3);
+    /* Premium Shadows & Effects */
+    --shadow-premium: 0 8px 32px hsl(220 25% 15% / 0.12), 0 2px 8px hsl(220 25% 15% / 0.08);
+    --shadow-premium-lg: 0 20px 64px hsl(220 25% 15% / 0.15), 0 8px 24px hsl(220 25% 15% / 0.1);
+    --shadow-copper: 0 8px 32px hsl(25 85% 35% / 0.3);
     --shadow-earth: 0 4px 20px hsl(142 70% 35% / 0.25);
-    --glow-monitoring: 0 0 20px hsl(212 85% 65% / 0.4);
+    --glow-premium: 0 0 40px hsl(212 85% 65% / 0.4);
     
-    /* Animations */
-    --transition-smooth: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-satellite: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Premium Animations */
+    --transition-premium: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-smooth: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 
     /* Semantic UI Components */
     --card: 210 30% 96%;
     --card-foreground: 215 25% 15%;
-
     --popover: 210 40% 98%;
     --popover-foreground: 215 25% 15%;
-
     --secondary: 142 45% 90%;
     --secondary-foreground: 140 85% 25%;
-
     --muted: 210 20% 92%;
     --muted-foreground: 215 15% 45%;
-
     --accent: 212 60% 85%;
     --accent-foreground: 212 85% 25%;
-
     --destructive: 0 75% 50%;
     --destructive-foreground: 210 40% 98%;
-
     --border: 210 20% 88%;
     --input: 210 25% 90%;
     --ring: 212 85% 45%;
-
-    --radius: 0.5rem;
-
+    --radius: 0.75rem;
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
   .dark {
-    /* Dark Mode - Space Monitoring Theme */
-    --background: 220 25% 8%;
+    /* Dark Mode - Premium Space Theme */
+    --background: 220 80% 8%;
     --foreground: 210 30% 92%;
-
-    --card: 220 20% 12%;
+    --card: 220 60% 12%;
     --card-foreground: 210 30% 92%;
-
-    --popover: 220 25% 8%;
+    --popover: 220 80% 8%;
     --popover-foreground: 210 30% 92%;
-
     --primary: 212 85% 55%;
-    --primary-foreground: 220 25% 8%;
+    --primary-foreground: 220 80% 8%;
     --primary-glow: 212 85% 75%;
-
-    --secondary: 220 15% 18%;
+    --secondary: 220 25% 18%;
     --secondary-foreground: 142 60% 70%;
-
-    --muted: 220 15% 15%;
+    --muted: 220 25% 15%;
     --muted-foreground: 215 20% 65%;
-
-    --accent: 220 20% 20%;
+    --accent: 220 30% 20%;
     --accent-foreground: 212 85% 75%;
-
     --destructive: 0 75% 55%;
     --destructive-foreground: 210 30% 92%;
-
-    --border: 220 15% 18%;
-    --input: 220 15% 18%;
+    --border: 220 25% 18%;
+    --input: 220 25% 18%;
     --ring: 212 85% 55%;
+    --glass-bg: 220 80% 8% / 0.2;
+    --glass-border: 220 30% 80% / 0.1;
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -136,6 +130,106 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-inter antialiased;
+  }
+  
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  /* Premium typography */
+  .font-premium-serif {
+    font-family: 'Playfair Display', serif;
+  }
+  
+  .font-premium-sans {
+    font-family: 'Inter', sans-serif;
+  }
+  
+  .font-premium-mono {
+    font-family: 'Space Grotesk', monospace;
+  }
+}
+
+@layer components {
+  /* Glass-morphism utilities */
+  .glass-panel {
+    @apply bg-glass-bg backdrop-blur-xl border border-glass-border;
+  }
+  
+  .glass-card {
+    @apply glass-panel rounded-2xl shadow-premium;
+  }
+  
+  /* Premium button effects */
+  .btn-premium {
+    @apply relative overflow-hidden transition-premium;
+  }
+  
+  .btn-premium::before {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent;
+    @apply translate-x-[-100%] transition-transform duration-700;
+  }
+  
+  .btn-premium:hover::before {
+    @apply translate-x-[100%];
+  }
+  
+  /* Parallax container */
+  .parallax-container {
+    @apply relative overflow-hidden;
+  }
+  
+  /* Premium animations */
+  .animate-fade-in-up {
+    animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  
+  .animate-scale-in {
+    animation: scaleIn 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  
+  .animate-slide-in-right {
+    animation: slideInRight 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    opacity: 0;
+    transform: translateX(30px);
+  }
+}
+
+@keyframes fadeInUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideInRight {
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in-up,
+  .animate-scale-in,
+  .animate-slide-in-right {
+    animation: none;
+    opacity: 1;
+    transform: none;
   }
 }

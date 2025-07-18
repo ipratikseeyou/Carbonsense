@@ -4,14 +4,18 @@ import Navigation from '@/components/Navigation';
 import HeroSection from '@/components/HeroSection';
 import ProjectGrid from '@/components/ProjectGrid';
 import MonitoringDashboard from '@/components/MonitoringDashboard';
+import PremiumFeatures from '@/components/PremiumFeatures';
+import PremiumFooter from '@/components/PremiumFooter';
 
 const Index = () => {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-background">
       <Navigation />
       <HeroSection />
       <MonitoringDashboard />
+      <PremiumFeatures />
       <ProjectGrid />
+      <PremiumFooter />
     </div>
   );
 };
