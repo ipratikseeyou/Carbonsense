@@ -164,7 +164,7 @@
   
   /* Premium button effects */
   .btn-premium {
-    @apply relative overflow-hidden transition-all duration-300;
+    @apply relative overflow-hidden transition-all duration-400;
   }
   
   .btn-premium::before {
@@ -182,49 +182,91 @@
     @apply relative overflow-hidden;
   }
   
-  /* Premium animations */
+  /* Enhanced Premium animations - Always visible with gentle movement */
+  .animate-gentle-bounce {
+    animation: gentleBounce 2s ease-in-out infinite;
+    opacity: 1;
+  }
+  
+  .animate-soft-scale {
+    animation: softScale 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    opacity: 1;
+  }
+  
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+    opacity: 1;
+  }
+  
+  .animate-color-shift {
+    animation: colorShift 2s ease-in-out infinite alternate;
+    opacity: 1;
+  }
+  
+  /* Legacy animations kept for compatibility but made always visible */
   .animate-fade-in-up {
-    animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  
-  .animate-scale-in {
-    animation: scaleIn 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  
-  .animate-slide-in-right {
-    animation: slideInRight 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-    opacity: 0;
-    transform: translateX(30px);
-  }
-}
-
-@keyframes fadeInUp {
-  to {
+    animation: fadeInUpGentle 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-@keyframes scaleIn {
-  to {
+  
+  .animate-scale-in {
+    animation: scaleInGentle 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
     opacity: 1;
     transform: scale(1);
   }
-}
-
-@keyframes slideInRight {
-  to {
+  
+  .animate-slide-in-right {
+    animation: slideInRightGentle 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
     opacity: 1;
     transform: translateX(0);
   }
 }
 
+/* New gentle animations that keep elements always visible */
+@keyframes gentleBounce {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes softScale {
+  0% { transform: scale(0.98); }
+  100% { transform: scale(1); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  33% { transform: translateY(-10px) rotate(1deg); }
+  66% { transform: translateY(-5px) rotate(-1deg); }
+}
+
+@keyframes colorShift {
+  0% { filter: hue-rotate(0deg); }
+  100% { filter: hue-rotate(10deg); }
+}
+
+/* Gentle versions of existing animations - always visible */
+@keyframes fadeInUpGentle {
+  0% { transform: translateY(10px); opacity: 0.8; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes scaleInGentle {
+  0% { transform: scale(0.98); opacity: 0.9; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes slideInRightGentle {
+  0% { transform: translateX(10px); opacity: 0.8; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+
 /* Reduced motion preferences */
 @media (prefers-reduced-motion: reduce) {
+  .animate-gentle-bounce,
+  .animate-soft-scale,
+  .animate-float,
+  .animate-color-shift,
   .animate-fade-in-up,
   .animate-scale-in,
   .animate-slide-in-right {

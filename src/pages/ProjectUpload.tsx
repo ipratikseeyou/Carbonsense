@@ -12,7 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { toast } from '@/components/ui/use-toast';
 import Navigation from '@/components/Navigation';
 import MapLocationPicker from '@/components/MapLocationPicker';
-import { Upload, MapPin } from 'lucide-react';
+import { Upload, MapPin, Satellite, Shield, Zap } from 'lucide-react';
 
 const projectFormSchema = z.object({
   name: z.string().min(1, 'Project name is required').max(100, 'Name too long'),
@@ -108,33 +108,61 @@ const ProjectUpload = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-satellite-blue/5">
+    <div className="min-h-screen bg-gradient-hero relative overflow-hidden">
+      {/* Premium Background Effects */}
+      <div className="absolute inset-0 bg-gradient-to-br from-space-navy via-space-navy-light to-primary/10"></div>
+      <div className="absolute inset-0 bg-gradient-to-t from-transparent via-transparent to-primary/5"></div>
+      
+      {/* Floating Elements */}
+      <div className="absolute top-20 right-20 animate-float">
+        <div className="glass-card p-4 animate-gentle-bounce">
+          <Upload className="h-8 w-8 text-primary-glow animate-color-shift" />
+        </div>
+      </div>
+      
+      <div className="absolute bottom-32 left-16 animate-float" style={{ animationDelay: '1.5s' }}>
+        <div className="glass-card p-3 animate-gentle-bounce">
+          <Satellite className="h-6 w-6 text-copper animate-color-shift" />
+        </div>
+      </div>
+
       <Navigation />
       
-      <div className="container mx-auto px-4 py-8">
+      <div className="relative z-10 container mx-auto px-4 py-8">
         <div className="max-w-2xl mx-auto">
-          <div className="text-center mb-8">
-            <div className="flex items-center justify-center mb-4">
-              <Upload className="h-12 w-12 text-satellite-blue" />
+          {/* Premium Header */}
+          <div className="text-center mb-8 animate-soft-scale">
+            <div className="inline-flex items-center gap-3 glass-panel backdrop-blur-xl border border-primary/20 rounded-full px-6 py-3 mb-6 animate-gentle-bounce">
+              <Shield className="w-4 h-4 text-primary-glow" />
+              <span className="text-primary-glow text-sm font-premium-mono font-medium">
+                Premium Project Upload • Satellite Verified • AI-Powered
+              </span>
+              <Zap className="w-4 h-4 text-gold-warm animate-color-shift" />
             </div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">Upload New Project</h1>
-            <p className="text-muted-foreground">
-              Add a new carbon offset project to our satellite monitoring network
+            
+            <h1 className="text-4xl md:text-5xl font-premium-serif font-bold text-white mb-4 animate-gentle-bounce">
+              Upload New <span className="bg-gradient-copper bg-clip-text text-transparent">Project</span>
+            </h1>
+            <p className="text-lg text-white/80 font-premium-sans max-w-lg mx-auto">
+              Add a new carbon offset project to our premium satellite monitoring network
             </p>
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MapPin className="h-5 w-5" />
+          {/* Premium Form Card */}
+          <Card className="glass-card backdrop-blur-xl border-primary/20 hover:border-primary/30 transition-all duration-400 animate-soft-scale">
+            <CardHeader className="text-center">
+              <CardTitle className="flex items-center justify-center gap-3 text-white font-premium-serif text-2xl">
+                <div className="p-2 rounded-full bg-gradient-copper animate-gentle-bounce">
+                  <MapPin className="h-5 w-5 text-white" />
+                </div>
                 Project Details
               </CardTitle>
-              <CardDescription>
-                Enter the details for your carbon offset project
+              <CardDescription className="text-white/70 font-premium-sans">
+                Enter the details for your premium carbon offset project
               </CardDescription>
             </CardHeader>
             
-            <CardContent>
+            <CardContent className="space-y-6">
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                   <FormField
@@ -142,9 +170,13 @@ const ProjectUpload = () => {
                     name="name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Project Name</FormLabel>
+                        <FormLabel className="text-white font-premium-sans font-medium">Project Name</FormLabel>
                         <FormControl>
-                          <Input placeholder="Amazon Rainforest Restoration" {...field} />
+                          <Input 
+                            placeholder="Amazon Rainforest Restoration" 
+                            {...field} 
+                            className="glass-panel border-primary/20 text-white placeholder:text-white/50 focus:border-primary/50 transition-all duration-300 hover:scale-[1.01]"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -156,16 +188,18 @@ const ProjectUpload = () => {
                     name="coordinates"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Project Location</FormLabel>
+                        <FormLabel className="text-white font-premium-sans font-medium">Project Location</FormLabel>
                         <FormControl>
                           <div className="space-y-4">
-                            <MapLocationPicker
-                              onLocationSelect={handleLocationSelect}
-                              initialLocation={selectedLocation}
-                            />
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <MapPin className="h-4 w-4" />
-                              <span>Current coordinates: {form.watch('coordinates')}</span>
+                            <div className="glass-panel rounded-xl p-4 border-primary/20 hover:border-primary/30 transition-all duration-300">
+                              <MapLocationPicker
+                                onLocationSelect={handleLocationSelect}
+                                initialLocation={selectedLocation}
+                              />
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-white/70 glass-panel rounded-lg px-3 py-2 border-primary/10">
+                              <MapPin className="h-4 w-4 text-primary-glow animate-gentle-bounce" />
+                              <span className="font-premium-mono">Current coordinates: {form.watch('coordinates')}</span>
                             </div>
                           </div>
                         </FormControl>
@@ -180,7 +214,7 @@ const ProjectUpload = () => {
                       name="carbon_tons"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Carbon Tons</FormLabel>
+                          <FormLabel className="text-white font-premium-sans font-medium">Carbon Tons</FormLabel>
                           <FormControl>
                             <Input 
                               type="number" 
@@ -188,6 +222,7 @@ const ProjectUpload = () => {
                               placeholder="1000"
                               {...field}
                               onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                              className="glass-panel border-primary/20 text-white placeholder:text-white/50 focus:border-earth-green-light/50 transition-all duration-300 hover:scale-[1.01]"
                             />
                           </FormControl>
                           <FormMessage />
@@ -200,7 +235,7 @@ const ProjectUpload = () => {
                       name="price_per_ton"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Price per Ton ($)</FormLabel>
+                          <FormLabel className="text-white font-premium-sans font-medium">Price per Ton ($)</FormLabel>
                           <FormControl>
                             <Input 
                               type="number" 
@@ -208,6 +243,7 @@ const ProjectUpload = () => {
                               placeholder="25.00"
                               {...field}
                               onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                              className="glass-panel border-primary/20 text-white placeholder:text-white/50 focus:border-gold-warm/50 transition-all duration-300 hover:scale-[1.01]"
                             />
                           </FormControl>
                           <FormMessage />
@@ -221,11 +257,12 @@ const ProjectUpload = () => {
                     name="satellite_image_url"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Satellite Image URL (Optional)</FormLabel>
+                        <FormLabel className="text-white font-premium-sans font-medium">Satellite Image URL (Optional)</FormLabel>
                         <FormControl>
                           <Input 
                             placeholder="https://example.com/satellite-image.jpg" 
                             {...field} 
+                            className="glass-panel border-primary/20 text-white placeholder:text-white/50 focus:border-primary/50 transition-all duration-300 hover:scale-[1.01]"
                           />
                         </FormControl>
                         <FormMessage />
@@ -233,19 +270,20 @@ const ProjectUpload = () => {
                     )}
                   />
 
-                  <div className="flex gap-4">
+                  <div className="flex gap-4 pt-4">
                     <Button
                       type="button"
-                      variant="outline"
+                      variant="glass"
                       onClick={() => navigate('/projects')}
-                      className="flex-1"
+                      className="flex-1 hover:border-white/30 animate-gentle-bounce"
                     >
                       Cancel
                     </Button>
                     <Button 
                       type="submit" 
-                      variant="satellite"
-                      className="flex-1"
+                      variant="premium"
+                      className="flex-1 shadow-copper animate-gentle-bounce"
+                      style={{ animationDelay: '0.2s' }}
                       disabled={form.formState.isSubmitting}
                     >
                       {form.formState.isSubmitting ? 'Uploading...' : 'Upload Project'}
