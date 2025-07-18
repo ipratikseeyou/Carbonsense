@@ -1,6 +1,7 @@
 
 import { makeApiRequest, API_CONFIG } from '@/config/api';
 import { toast } from '@/hooks/use-toast';
+import { isValidUUID } from './validateUUID';
 
 export interface AnalysisResult {
   ndvi?: number;
@@ -10,22 +11,73 @@ export interface AnalysisResult {
   confidence_score?: number;
 }
 
+export interface ApiError {
+  detail?: Array<{ msg: string; type: string }> | string;
+  message?: string;
+}
+
+const validateProjectId = (projectId: string | undefined): string => {
+  if (!projectId) {
+    throw new Error('Project ID is required');
+  }
+  
+  if (!isValidUUID(projectId)) {
+    throw new Error('Invalid project ID format. Please check the URL or select a valid project.');
+  }
+  
+  return projectId;
+};
+
+const parseApiError = (error: unknown): string => {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  
+  if (typeof error === 'object' && error !== null) {
+    const apiError = error as ApiError;
+    
+    if (Array.isArray(apiError.detail)) {
+      return apiError.detail[0]?.msg || 'An error occurred with the request';
+    }
+    
+    if (typeof apiError.detail === 'string') {
+      return apiError.detail;
+    }
+    
+    if (apiError.message) {
+      return apiError.message;
+    }
+  }
+  
+  return 'An unexpected error occurred. Please try again.';
+};
+
 export const analyzeProject = async (
-  projectId: string,
+  projectId: string | undefined,
   onStart: () => void,
   onComplete: (result: AnalysisResult) => void,
   onError: (error: string) => void
 ): Promise<void> => {
   try {
+    // Validate project ID first
+    const validProjectId = validateProjectId(projectId);
     onStart();
     
     const response = await makeApiRequest(
-      API_CONFIG.ENDPOINTS.ANALYZE_PROJECT(projectId),
+      API_CONFIG.ENDPOINTS.ANALYZE_PROJECT(validProjectId),
       { method: 'POST' }
     );
     
     if (!response.ok) {
-      throw new Error(`Analysis failed: ${response.statusText}`);
+      let errorData: ApiError;
+      try {
+        errorData = await response.json();
+      } catch {
+        throw new Error(`Analysis failed: ${response.statusText}`);
+      }
+      
+      const errorMessage = parseApiError(errorData);
+      throw new Error(errorMessage);
     }
     
     const result: AnalysisResult = await response.json();
@@ -38,9 +90,7 @@ export const analyzeProject = async (
     
   } catch (error) {
     console.error('Error analyzing project:', error);
-    const errorMessage = error instanceof Error 
-      ? error.message 
-      : 'Failed to analyze project. Make sure your backend is running.';
+    const errorMessage = parseApiError(error);
     
     onError(errorMessage);
     
@@ -53,21 +103,31 @@ export const analyzeProject = async (
 };
 
 export const downloadProjectReport = async (
-  projectId: string,
+  projectId: string | undefined,
   projectName: string,
   onStart: () => void,
   onComplete: () => void,
   onError: (error: string) => void
 ): Promise<void> => {
   try {
+    // Validate project ID first
+    const validProjectId = validateProjectId(projectId);
     onStart();
     
     const response = await makeApiRequest(
-      API_CONFIG.ENDPOINTS.DOWNLOAD_REPORT(projectId)
+      API_CONFIG.ENDPOINTS.DOWNLOAD_REPORT(validProjectId)
     );
     
     if (!response.ok) {
-      throw new Error(`Report generation failed: ${response.statusText}`);
+      let errorData: ApiError;
+      try {
+        errorData = await response.json();
+      } catch {
+        throw new Error(`Report generation failed: ${response.statusText}`);
+      }
+      
+      const errorMessage = parseApiError(errorData);
+      throw new Error(errorMessage);
     }
     
     const blob = await response.blob();
@@ -89,9 +149,7 @@ export const downloadProjectReport = async (
     
   } catch (error) {
     console.error('Error downloading report:', error);
-    const errorMessage = error instanceof Error 
-      ? error.message 
-      : 'Failed to download report. Make sure your backend is running.';
+    const errorMessage = parseApiError(error);
     
     onError(errorMessage);
     
