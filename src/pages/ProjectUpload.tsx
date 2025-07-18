@@ -7,11 +7,11 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { toast } from '@/components/ui/use-toast';
 import Navigation from '@/components/Navigation';
+import MapLocationPicker from '@/components/MapLocationPicker';
 import { Upload, MapPin } from 'lucide-react';
 
 const projectFormSchema = z.object({
@@ -34,12 +34,18 @@ const ProjectUpload = () => {
     resolver: zodResolver(projectFormSchema),
     defaultValues: {
       name: '',
-      coordinates: '',
+      coordinates: '0,0',
       carbon_tons: 0,
       price_per_ton: 25,
       satellite_image_url: '',
     },
   });
+
+  const handleLocationSelect = (lat: number, lng: number) => {
+    const coordString = `${lat.toFixed(6)},${lng.toFixed(6)}`;
+    form.setValue('coordinates', coordString);
+    form.clearErrors('coordinates');
+  };
 
   const onSubmit = async (data: ProjectFormData) => {
     try {
@@ -122,9 +128,11 @@ const ProjectUpload = () => {
                     name="coordinates"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Coordinates (Latitude, Longitude)</FormLabel>
                         <FormControl>
-                          <Input placeholder="40.7128,-74.0060" {...field} />
+                          <MapLocationPicker
+                            onLocationSelect={handleLocationSelect}
+                            initialLocation={{ lat: 0, lng: 0 }}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
