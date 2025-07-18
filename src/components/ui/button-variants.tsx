@@ -13,13 +13,12 @@ export const buttonVariants = cva(
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
         
-        // Premium variants
-        premium: "bg-gradient-copper text-white font-semibold hover:shadow-copper transition-all duration-400 hover:scale-[1.02] btn-premium",
-        glass: "glass-card text-foreground hover:bg-glass-bg/80 backdrop-blur-xl border-glass-border hover:border-primary/30 transition-all duration-400",
-        satellite: "bg-gradient-to-r from-primary to-primary-glow text-primary-foreground hover:shadow-glow transition-all duration-500 transform hover:scale-[1.02] btn-premium",
-        earth: "bg-gradient-earth-premium text-primary-foreground hover:shadow-earth transition-all duration-400 hover:scale-[1.02] btn-premium",
-        copper: "bg-gradient-copper text-white hover:from-copper-light hover:to-gold-light transition-all duration-400 hover:scale-[1.02] btn-premium shadow-copper/50",
-        outline-premium: "border-2 border-copper bg-transparent text-copper hover:bg-copper hover:text-white transition-all duration-400 hover:scale-[1.02] hover:shadow-copper",
+        premium: "bg-gradient-to-r from-copper-accent to-gold-warm text-white font-semibold hover:shadow-lg hover:shadow-copper-accent/30 transition-all duration-400 hover:scale-[1.02] btn-premium",
+        glass: "bg-glass-bg backdrop-blur-xl text-foreground hover:bg-glass-bg/80 border border-glass-border hover:border-primary/30 transition-all duration-400",
+        satellite: "bg-gradient-to-r from-primary to-primary-glow text-primary-foreground hover:shadow-lg hover:shadow-primary-glow/30 transition-all duration-500 transform hover:scale-[1.02] btn-premium",
+        earth: "bg-gradient-to-r from-earth-green to-earth-teal text-white hover:shadow-lg hover:shadow-earth-green/30 transition-all duration-400 hover:scale-[1.02] btn-premium",
+        copper: "bg-gradient-to-r from-copper-accent to-gold-warm text-white hover:from-copper-light hover:to-gold-light transition-all duration-400 hover:scale-[1.02] btn-premium shadow-lg shadow-copper-accent/20",
+        "outline-premium": "border-2 border-copper-accent bg-transparent text-copper-accent hover:bg-copper-accent hover:text-white transition-all duration-400 hover:scale-[1.02] hover:shadow-lg hover:shadow-copper-accent/30"
       },
       size: {
         default: "h-11 px-6 py-2",
@@ -27,12 +26,12 @@ export const buttonVariants = cva(
         lg: "h-12 rounded-xl px-8 text-base",
         xl: "h-14 rounded-2xl px-10 text-lg font-semibold",
         xxl: "h-16 rounded-2xl px-12 text-xl font-semibold",
-        icon: "h-11 w-11",
-      },
+        icon: "h-11 w-11"
+      }
     },
     defaultVariants: {
       variant: "default",
-      size: "default",
-    },
+      size: "default"
+    }
   }
 );
