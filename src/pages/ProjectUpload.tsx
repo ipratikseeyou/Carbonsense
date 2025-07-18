@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -30,25 +30,53 @@ type ProjectFormData = z.infer<typeof projectFormSchema>;
 const ProjectUpload = () => {
   const navigate = useNavigate();
   
+  // State to hold selected coordinates - using a meaningful default location (New York City)
+  const [selectedLocation, setSelectedLocation] = useState({ lat: 40.7128, lng: -74.0060 });
+  
   const form = useForm<ProjectFormData>({
     resolver: zodResolver(projectFormSchema),
     defaultValues: {
       name: '',
-      coordinates: '0,0',
+      coordinates: '40.7128,-74.0060',
       carbon_tons: 0,
       price_per_ton: 25,
       satellite_image_url: '',
     },
   });
 
+  // Parse initial location from form if available
+  useEffect(() => {
+    const coords = form.getValues('coordinates');
+    if (coords && coords !== '0,0') {
+      const coordsParts = coords.split(',');
+      if (coordsParts.length === 2) {
+        const lat = parseFloat(coordsParts[0].trim());
+        const lng = parseFloat(coordsParts[1].trim());
+        if (!isNaN(lat) && !isNaN(lng)) {
+          setSelectedLocation({ lat, lng });
+        }
+      }
+    }
+  }, [form]);
+
   const handleLocationSelect = (lat: number, lng: number) => {
+    console.log(`Selected location: ${lat}, ${lng}`);
+    setSelectedLocation({ lat, lng });
     const coordString = `${lat.toFixed(6)},${lng.toFixed(6)}`;
     form.setValue('coordinates', coordString);
     form.clearErrors('coordinates');
+    
+    // Show visual feedback
+    toast({
+      title: 'Location Updated',
+      description: `Coordinates set to: ${coordString}`,
+    });
   };
 
   const onSubmit = async (data: ProjectFormData) => {
     try {
+      console.log('Submitting project with data:', data);
+      
       const { error } = await supabase
         .from('projects')
         .insert([
@@ -128,11 +156,18 @@ const ProjectUpload = () => {
                     name="coordinates"
                     render={({ field }) => (
                       <FormItem>
+                        <FormLabel>Project Location</FormLabel>
                         <FormControl>
-                          <MapLocationPicker
-                            onLocationSelect={handleLocationSelect}
-                            initialLocation={{ lat: 0, lng: 0 }}
-                          />
+                          <div className="space-y-4">
+                            <MapLocationPicker
+                              onLocationSelect={handleLocationSelect}
+                              initialLocation={selectedLocation}
+                            />
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <MapPin className="h-4 w-4" />
+                              <span>Current coordinates: {form.watch('coordinates')}</span>
+                            </div>
+                          </div>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
