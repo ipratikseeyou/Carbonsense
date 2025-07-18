@@ -134,7 +134,7 @@ const ProjectUpload = () => {
           <div className="text-center mb-8 animate-soft-scale">
             <div className="inline-flex items-center gap-3 glass-panel backdrop-blur-xl border border-primary/20 rounded-full px-6 py-3 mb-6 animate-gentle-bounce">
               <Shield className="w-4 h-4 text-primary-glow" />
-              <span className="text-primary-glow text-sm font-premium-mono font-medium">
+              <span className="text-white text-sm font-premium-mono font-medium">
                 Premium Project Upload • Satellite Verified • AI-Powered
               </span>
               <Zap className="w-4 h-4 text-gold-warm animate-color-shift" />
@@ -175,10 +175,10 @@ const ProjectUpload = () => {
                           <Input 
                             placeholder="Amazon Rainforest Restoration" 
                             {...field} 
-                            className="glass-panel border-primary/20 text-white placeholder:text-white/50 focus:border-primary/50 transition-all duration-300 hover:scale-[1.01]"
+                            className="glass-panel border-primary/20 text-white placeholder:text-white/50 focus:border-primary/50 transition-all duration-300 hover:scale-[1.01] bg-white/5"
                           />
                         </FormControl>
-                        <FormMessage />
+                        <FormMessage className="text-red-300" />
                       </FormItem>
                     )}
                   />
@@ -191,19 +191,19 @@ const ProjectUpload = () => {
                         <FormLabel className="text-white font-premium-sans font-medium">Project Location</FormLabel>
                         <FormControl>
                           <div className="space-y-4">
-                            <div className="glass-panel rounded-xl p-4 border-primary/20 hover:border-primary/30 transition-all duration-300">
+                            <div className="glass-panel rounded-xl p-4 border-primary/20 hover:border-primary/30 transition-all duration-300 bg-white/10">
                               <MapLocationPicker
                                 onLocationSelect={handleLocationSelect}
                                 initialLocation={selectedLocation}
                               />
                             </div>
-                            <div className="flex items-center gap-2 text-sm text-white/70 glass-panel rounded-lg px-3 py-2 border-primary/10">
+                            <div className="flex items-center gap-2 text-sm text-foreground glass-panel rounded-lg px-3 py-2 border-primary/10 bg-white/90">
                               <MapPin className="h-4 w-4 text-primary-glow animate-gentle-bounce" />
-                              <span className="font-premium-mono">Current coordinates: {form.watch('coordinates')}</span>
+                              <span className="font-premium-mono text-foreground">Current coordinates: {form.watch('coordinates')}</span>
                             </div>
                           </div>
                         </FormControl>
-                        <FormMessage />
+                        <FormMessage className="text-red-300" />
                       </FormItem>
                     )}
                   />
@@ -222,10 +222,10 @@ const ProjectUpload = () => {
                               placeholder="1000"
                               {...field}
                               onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                              className="glass-panel border-primary/20 text-white placeholder:text-white/50 focus:border-earth-green-light/50 transition-all duration-300 hover:scale-[1.01]"
+                              className="glass-panel border-primary/20 text-white placeholder:text-white/50 focus:border-earth-green-light/50 transition-all duration-300 hover:scale-[1.01] bg-white/5"
                             />
                           </FormControl>
-                          <FormMessage />
+                          <FormMessage className="text-red-300" />
                         </FormItem>
                       )}
                     />
@@ -243,10 +243,10 @@ const ProjectUpload = () => {
                               placeholder="25.00"
                               {...field}
                               onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                              className="glass-panel border-primary/20 text-white placeholder:text-white/50 focus:border-gold-warm/50 transition-all duration-300 hover:scale-[1.01]"
+                              className="glass-panel border-primary/20 text-white placeholder:text-white/50 focus:border-gold-warm/50 transition-all duration-300 hover:scale-[1.01] bg-white/5"
                             />
                           </FormControl>
-                          <FormMessage />
+                          <FormMessage className="text-red-300" />
                         </FormItem>
                       )}
                     />
@@ -262,10 +262,10 @@ const ProjectUpload = () => {
                           <Input 
                             placeholder="https://example.com/satellite-image.jpg" 
                             {...field} 
-                            className="glass-panel border-primary/20 text-white placeholder:text-white/50 focus:border-primary/50 transition-all duration-300 hover:scale-[1.01]"
+                            className="glass-panel border-primary/20 text-white placeholder:text-white/50 focus:border-primary/50 transition-all duration-300 hover:scale-[1.01] bg-white/5"
                           />
                         </FormControl>
-                        <FormMessage />
+                        <FormMessage className="text-red-300" />
                       </FormItem>
                     )}
                   />
@@ -275,7 +275,7 @@ const ProjectUpload = () => {
                       type="button"
                       variant="glass"
                       onClick={() => navigate('/projects')}
-                      className="flex-1 hover:border-white/30 animate-gentle-bounce"
+                      className="flex-1 hover:border-white/30 animate-gentle-bounce text-white"
                     >
                       Cancel
                     </Button>

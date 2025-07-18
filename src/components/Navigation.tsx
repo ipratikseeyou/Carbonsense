@@ -37,10 +37,10 @@ const Navigation = () => {
               </div>
             </div>
             <div className="flex flex-col">
-              <span className="text-xl font-premium-serif font-bold text-foreground group-hover:text-copper transition-colors duration-300">
+              <span className="text-xl font-premium-serif font-bold text-white group-hover:text-copper transition-colors duration-300">
                 CarbonSense
               </span>
-              <span className="text-xs font-premium-mono text-muted-foreground -mt-1">
+              <span className="text-xs font-premium-mono text-white/70 -mt-1">
                 Premium Monitoring
               </span>
             </div>
@@ -52,7 +52,7 @@ const Navigation = () => {
               asChild
               variant={isActive('/') ? 'glass' : 'ghost'}
               size="default"
-              className="font-premium-sans"
+              className="font-premium-sans text-white hover:text-white"
             >
               <Link to="/">
                 <Home className="h-4 w-4 mr-2" />
@@ -64,7 +64,7 @@ const Navigation = () => {
               asChild
               variant={isActive('/projects') ? 'glass' : 'ghost'}
               size="default"
-              className="font-premium-sans"
+              className="font-premium-sans text-white hover:text-white"
             >
               <Link to="/projects">
                 <Grid className="h-4 w-4 mr-2" />
@@ -89,7 +89,7 @@ const Navigation = () => {
           <Button
             variant="ghost"
             size="icon"
-            className="md:hidden"
+            className="md:hidden text-white hover:text-white"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
             {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -103,7 +103,7 @@ const Navigation = () => {
               asChild
               variant={isActive('/') ? 'glass' : 'ghost'}
               size="default"
-              className="w-full justify-start font-premium-sans"
+              className="w-full justify-start font-premium-sans text-white hover:text-white"
               onClick={() => setIsMobileMenuOpen(false)}
             >
               <Link to="/">
@@ -116,7 +116,7 @@ const Navigation = () => {
               asChild
               variant={isActive('/projects') ? 'glass' : 'ghost'}
               size="default"
-              className="w-full justify-start font-premium-sans"
+              className="w-full justify-start font-premium-sans text-white hover:text-white"
               onClick={() => setIsMobileMenuOpen(false)}
             >
               <Link to="/projects">

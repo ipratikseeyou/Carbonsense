@@ -33,6 +33,26 @@ const HeroSection = () => {
     }
   }, []);
 
+  // Smooth scroll to next section function
+  const scrollToNextSection = () => {
+    const nextSection = document.querySelector('#monitoring-dashboard') || 
+                       document.querySelector('.monitoring-dashboard') ||
+                       document.querySelector('[data-section="monitoring"]');
+    
+    if (nextSection) {
+      nextSection.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'start'
+      });
+    } else {
+      // Fallback: scroll down by viewport height
+      window.scrollBy({ 
+        top: window.innerHeight, 
+        behavior: 'smooth' 
+      });
+    }
+  };
+
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Premium Background with Parallax */}
@@ -104,9 +124,9 @@ const HeroSection = () => {
             <ArrowDown className="group-hover:translate-y-1 transition-transform duration-300" />
           </Button>
           
-          <Button variant="glass" size="xxl" className="hover:border-primary/50 animate-gentle-bounce" style={{ animationDelay: '0.2s' }}>
-            View Live Data
-            <TrendingUp className="ml-2" />
+          <Button variant="glass" size="xxl" className="hover:border-primary/50 animate-gentle-bounce bg-gradient-copper bg-clip-text text-transparent font-semibold" style={{ animationDelay: '0.2s' }}>
+            <span className="bg-gradient-copper bg-clip-text text-transparent">View Live Data</span>
+            <TrendingUp className="ml-2 text-copper" />
           </Button>
         </div>
 
@@ -136,11 +156,15 @@ const HeroSection = () => {
         </div>
       </div>
 
-      {/* Premium Scroll Indicator - Gentle bouncing */}
+      {/* Premium Scroll Indicator - Gentle bouncing with click functionality */}
       <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-gentle-bounce">
-        <div className="glass-card p-3 hover:scale-110 transition-transform duration-300">
+        <button 
+          onClick={scrollToNextSection}
+          className="glass-card p-3 hover:scale-110 transition-transform duration-300 cursor-pointer"
+          aria-label="Scroll to next section"
+        >
           <ArrowDown className="h-5 w-5 text-white/60" />
-        </div>
+        </button>
       </div>
     </section>
   );
