@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -11,6 +10,7 @@ import { toast } from '@/hooks/use-toast';
 import { isValidUUID } from '@/utils/validateUUID';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrencyConversion } from '@/hooks/useCurrencyConversion';
+import jsPDF from 'jspdf';
 
 interface AnalysisResult {
   ndvi?: number;
@@ -56,10 +56,167 @@ const ProjectDetails = () => {
     enabled: !!id && isValidUUID(id),
   });
 
+  const handleDownloadReport = async () => {
+    if (!project) return;
+    
+    setIsDownloading(true);
+    
+    try {
+      // Create new PDF document
+      const pdf = new jsPDF();
+      const pageWidth = pdf.internal.pageSize.width;
+      const margin = 20;
+      let yPosition = margin;
+      
+      // Helper function to add text with word wrapping
+      const addText = (text: string, x: number, y: number, maxWidth: number, fontSize: number = 12) => {
+        pdf.setFontSize(fontSize);
+        const lines = pdf.splitTextToSize(text, maxWidth);
+        pdf.text(lines, x, y);
+        return y + (lines.length * fontSize * 0.5);
+      };
+      
+      // Header
+      pdf.setFontSize(20);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Carbon Project Report', margin, yPosition);
+      yPosition += 15;
+      
+      // Project name
+      pdf.setFontSize(16);
+      pdf.setFont('helvetica', 'bold');
+      yPosition = addText(project.name, margin, yPosition, pageWidth - 2 * margin, 16);
+      yPosition += 10;
+      
+      // Location
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'normal');
+      yPosition = addText(`Location: ${project.coordinates}`, margin, yPosition, pageWidth - 2 * margin);
+      yPosition += 10;
+      
+      // Project Summary Section
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Project Summary', margin, yPosition);
+      yPosition += 10;
+      
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      
+      const currencySymbol = getSymbol('USD');
+      const totalValue = (project.carbon_tons || 0) * (project.price_per_ton || 25);
+      
+      const summaryData = [
+        `Carbon Sequestration: ${Number(project.carbon_tons).toLocaleString()} tCO₂`,
+        `Price per Ton: ${currencySymbol}${Number(project.price_per_ton || 25).toFixed(2)}`,
+        `Total Project Value: ${currencySymbol}${totalValue.toLocaleString()}`,
+        `Created: ${new Date(project.created_at || '').toLocaleDateString()}`,
+        `Status: Active`
+      ];
+      
+      summaryData.forEach(item => {
+        yPosition = addText(item, margin, yPosition, pageWidth - 2 * margin, 10);
+        yPosition += 5;
+      });
+      
+      yPosition += 10;
+      
+      // Analysis Results Section (if available)
+      if (analysisResult) {
+        pdf.setFontSize(14);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('Analysis Results', margin, yPosition);
+        yPosition += 10;
+        
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'normal');
+        
+        if (analysisResult.ndvi) {
+          yPosition = addText(`NDVI Score: ${Number(analysisResult.ndvi).toFixed(3)}`, margin, yPosition, pageWidth - 2 * margin, 10);
+          yPosition += 5;
+        }
+        
+        if (analysisResult.forest_cover) {
+          yPosition = addText(`Forest Cover: ${Number(analysisResult.forest_cover).toFixed(1)}%`, margin, yPosition, pageWidth - 2 * margin, 10);
+          yPosition += 5;
+        }
+        
+        if (analysisResult.carbon_estimate) {
+          yPosition = addText(`Carbon Estimate: ${Number(analysisResult.carbon_estimate).toLocaleString()} tCO₂`, margin, yPosition, pageWidth - 2 * margin, 10);
+          yPosition += 5;
+        }
+        
+        if (analysisResult.recommendations) {
+          yPosition += 5;
+          pdf.setFont('helvetica', 'bold');
+          yPosition = addText('Recommendations:', margin, yPosition, pageWidth - 2 * margin, 10);
+          yPosition += 3;
+          pdf.setFont('helvetica', 'normal');
+          yPosition = addText(analysisResult.recommendations, margin, yPosition, pageWidth - 2 * margin, 10);
+        }
+        
+        yPosition += 10;
+      }
+      
+      // Verification Details Section
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Verification & Standards', margin, yPosition);
+      yPosition += 10;
+      
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      
+      const verificationData = [
+        'Verification Standard: VCS v4.0',
+        'Methodology: VM0015',
+        'Currency: USD'
+      ];
+      
+      verificationData.forEach(item => {
+        yPosition = addText(item, margin, yPosition, pageWidth - 2 * margin, 10);
+        yPosition += 5;
+      });
+      
+      // Footer
+      const footerY = pdf.internal.pageSize.height - 20;
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'italic');
+      pdf.text(`Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}`, margin, footerY);
+      pdf.text('CarbonTrack Platform - Satellite-Powered Carbon Monitoring', pageWidth - margin - 80, footerY);
+      
+      // Generate PDF blob and download
+      const pdfBlob = pdf.output('blob');
+      const url = window.URL.createObjectURL(pdfBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${project.name.replace(/\s+/g, '-').toLowerCase()}-report.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: 'PDF Report Downloaded!',
+        description: 'Project report has been downloaded successfully as PDF.',
+      });
+      
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast({
+        title: 'Download Failed',
+        description: 'Could not generate PDF report. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   const handleAnalyzeProject = async () => {
     setIsAnalyzing(true);
     
-    // Simulate analysis - in a real app, this would call your AWS API
+    // Simulate analysis - in a real app, this would call your analysis API
     setTimeout(() => {
       const mockResult: AnalysisResult = {
         ndvi: 0.75 + Math.random() * 0.2,
@@ -77,42 +234,6 @@ const ProjectDetails = () => {
         description: 'Project analysis has been completed successfully.',
       });
     }, 2000);
-  };
-
-  const handleDownloadReport = async () => {
-    if (!project) return;
-    
-    setIsDownloading(true);
-    
-    // Simulate PDF generation - in a real app, this would generate an actual PDF
-    setTimeout(() => {
-      const reportContent = `
-Carbon Project Report
-Project: ${project.name}
-Location: ${project.coordinates}
-Carbon Tons: ${Number(project.carbon_tons).toLocaleString()}
-Price per Ton: $${Number(project.price_per_ton || 25).toFixed(2)}
-Total Value: $${((project.carbon_tons || 0) * (project.price_per_ton || 25)).toLocaleString()}
-Generated: ${new Date().toLocaleDateString()}
-      `;
-      
-      const blob = new Blob([reportContent], { type: 'text/plain' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${project.name.replace(/\s+/g, '-').toLowerCase()}-report.txt`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      
-      setIsDownloading(false);
-      
-      toast({
-        title: 'Report Downloaded!',
-        description: 'Project report has been downloaded successfully.',
-      });
-    }, 1500);
   };
 
   const handleDelete = async () => {
@@ -281,7 +402,6 @@ Generated: ${new Date().toLocaleDateString()}
               </CardContent>
             </Card>
 
-            {/* Project Details */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-foreground">Project Details</CardTitle>
@@ -328,7 +448,6 @@ Generated: ${new Date().toLocaleDateString()}
               </CardContent>
             </Card>
 
-            {/* Analysis Results */}
             {analysisResult && (
               <Card>
                 <CardHeader>
@@ -435,12 +554,12 @@ Generated: ${new Date().toLocaleDateString()}
                   {isDownloading ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Generating...
+                      Generating PDF...
                     </>
                   ) : (
                     <>
                       <Download className="h-4 w-4 mr-2" />
-                      Download Report
+                      Download PDF Report
                     </>
                   )}
                 </Button>
