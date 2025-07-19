@@ -69,8 +69,8 @@ const ProjectDashboard = () => {
         <Navigation />
         <div className="relative z-10 container mx-auto px-4 py-8">
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-destructive">Error loading projects</h1>
-            <p className="text-muted-foreground mt-2">Please try again later.</p>
+            <h1 className="text-2xl font-bold text-white">Error loading projects</h1>
+            <p className="text-white/70 mt-2">Please try again later.</p>
           </div>
         </div>
       </div>
@@ -104,7 +104,7 @@ const ProjectDashboard = () => {
           <div>
             <div className="inline-flex items-center gap-3 glass-panel backdrop-blur-xl border border-primary/20 rounded-full px-6 py-3 mb-4 animate-gentle-bounce">
               <Shield className="w-4 h-4 text-primary-glow" />
-              <span className="text-primary-glow text-sm font-premium-mono font-medium">
+              <span className="text-white text-sm font-premium-mono font-medium">
                 Premium Dashboard • Real-time Monitoring • AI-Powered
               </span>
               <Zap className="w-4 h-4 text-gold-warm animate-color-shift" />
@@ -135,7 +135,7 @@ const ProjectDashboard = () => {
           ].map((stat, index) => (
             <Card key={stat.title} className="glass-card backdrop-blur-xl border-primary/20 hover:border-primary/30 transition-all duration-400 animate-soft-scale hover:scale-105" style={{ animationDelay: `${index * 0.1}s` }}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-premium-sans font-medium text-white/80">{stat.title}</CardTitle>
+                <CardTitle className="text-sm font-premium-sans font-medium text-white/90">{stat.title}</CardTitle>
                 <div className={`p-2 rounded-full bg-gradient-to-r ${stat.gradient} animate-gentle-bounce`}>
                   <stat.icon className="h-4 w-4 text-white" />
                 </div>
@@ -144,7 +144,7 @@ const ProjectDashboard = () => {
                 <div className={`text-3xl font-premium-serif font-bold bg-gradient-to-r ${stat.gradient} bg-clip-text text-transparent mb-1`}>
                   {stat.value}
                 </div>
-                <p className="text-xs text-white/60 font-premium-sans">{stat.desc}</p>
+                <p className="text-xs text-white/70 font-premium-sans">{stat.desc}</p>
               </CardContent>
             </Card>
           ))}
@@ -158,7 +158,7 @@ const ProjectDashboard = () => {
               placeholder="Search projects by name or coordinates..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 glass-panel border-primary/20 text-white placeholder:text-white/50 focus:border-primary/50 transition-all duration-300 hover:scale-[1.01]"
+              className="pl-10 glass-panel border-primary/20 text-white placeholder:text-white/50 focus:border-primary/50 transition-all duration-300 hover:scale-[1.01] bg-white/5"
             />
           </div>
           
@@ -167,7 +167,7 @@ const ProjectDashboard = () => {
               variant={viewMode === 'grid' ? 'premium' : 'glass'}
               size="sm"
               onClick={() => setViewMode('grid')}
-              className="animate-gentle-bounce"
+              className="animate-gentle-bounce text-white"
             >
               <Grid className="h-4 w-4" />
             </Button>
@@ -175,7 +175,7 @@ const ProjectDashboard = () => {
               variant={viewMode === 'list' ? 'premium' : 'glass'}
               size="sm"
               onClick={() => setViewMode('list')}
-              className="animate-gentle-bounce"
+              className="animate-gentle-bounce text-white"
               style={{ animationDelay: '0.1s' }}
             >
               <List className="h-4 w-4" />
@@ -217,7 +217,7 @@ const ProjectDashboard = () => {
                   <div className="flex justify-between items-start">
                     <div>
                       <CardTitle className="text-lg font-premium-serif text-white">{project.name}</CardTitle>
-                      <CardDescription className="flex items-center gap-1 mt-1 text-white/60">
+                      <CardDescription className="flex items-center gap-1 mt-1 text-white/70">
                         <MapPin className="h-3 w-3 animate-gentle-bounce" />
                         <span className="font-premium-mono text-sm">{project.coordinates}</span>
                       </CardDescription>
@@ -237,22 +237,22 @@ const ProjectDashboard = () => {
                 <CardContent>
                   <div className="space-y-2 mb-4">
                     <div className="flex justify-between text-sm">
-                      <span className="text-white/60 font-premium-sans">Carbon Tons:</span>
+                      <span className="text-white/70 font-premium-sans">Carbon Tons:</span>
                       <span className="font-premium-mono font-medium text-earth-green-light">{Number(project.carbon_tons).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-white/60 font-premium-sans">Price per Ton:</span>
+                      <span className="text-white/70 font-premium-sans">Price per Ton:</span>
                       <span className="font-premium-mono font-medium text-gold-warm">${Number(project.price_per_ton || 25).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-white/60 font-premium-sans">Created:</span>
+                      <span className="text-white/70 font-premium-sans">Created:</span>
                       <span className="font-premium-mono font-medium text-white/80">
                         {new Date(project.created_at || '').toLocaleDateString()}
                       </span>
                     </div>
                   </div>
                   
-                  <Button asChild variant="glass" className="w-full hover:border-primary/50 animate-gentle-bounce">
+                  <Button asChild variant="glass" className="w-full hover:border-primary/50 animate-gentle-bounce text-white">
                     <Link to={`/projects/${project.id}`}>
                       View Details
                     </Link>

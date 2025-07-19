@@ -1,5 +1,6 @@
 
 import React, { useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowDown, Satellite, Target, TrendingUp, Globe, Zap, Shield } from 'lucide-react';
 import heroImage from '@/assets/hero-satellite-earth.jpg';
@@ -119,13 +120,15 @@ const HeroSection = () => {
 
         {/* Premium CTA Buttons */}
         <div className="flex flex-col md:flex-row gap-4 justify-center items-center mb-16 animate-on-scroll">
-          <Button variant="premium" size="xxl" className="group shadow-premium-lg hover:shadow-copper animate-gentle-bounce">
-            Explore Premium Projects
-            <ArrowDown className="group-hover:translate-y-1 transition-transform duration-300" />
+          <Button asChild variant="premium" size="xxl" className="group shadow-premium-lg hover:shadow-copper animate-gentle-bounce">
+            <Link to="/projects">
+              Explore Premium Projects
+              <ArrowDown className="group-hover:translate-y-1 transition-transform duration-300" />
+            </Link>
           </Button>
           
-          <Button variant="glass" size="xxl" className="hover:border-primary/50 animate-gentle-bounce bg-gradient-copper bg-clip-text text-transparent font-semibold" style={{ animationDelay: '0.2s' }}>
-            <span className="bg-gradient-copper bg-clip-text text-transparent">View Live Data</span>
+          <Button variant="glass" size="xxl" className="hover:border-primary/50 animate-gentle-bounce" style={{ animationDelay: '0.2s' }}>
+            <span className="bg-gradient-copper bg-clip-text text-transparent font-semibold">View Live Data</span>
             <TrendingUp className="ml-2 text-copper" />
           </Button>
         </div>

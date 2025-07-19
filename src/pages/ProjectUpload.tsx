@@ -197,9 +197,9 @@ const ProjectUpload = () => {
                                 initialLocation={selectedLocation}
                               />
                             </div>
-                            <div className="flex items-center gap-2 text-sm text-foreground glass-panel rounded-lg px-3 py-2 border-primary/10 bg-white/90">
-                              <MapPin className="h-4 w-4 text-primary-glow animate-gentle-bounce" />
-                              <span className="font-premium-mono text-foreground">Current coordinates: {form.watch('coordinates')}</span>
+                            <div className="flex items-center gap-2 text-sm glass-panel rounded-lg px-3 py-2 border-primary/10 bg-white/95">
+                              <MapPin className="h-4 w-4 text-primary animate-gentle-bounce" />
+                              <span className="font-premium-mono text-space-navy font-medium">Current coordinates: {form.watch('coordinates')}</span>
                             </div>
                           </div>
                         </FormControl>
