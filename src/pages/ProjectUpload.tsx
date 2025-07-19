@@ -215,7 +215,7 @@ const ProjectUpload = () => {
                         <FormControl>
                           <Input placeholder="https://example.com/satellite-image.jpg" {...field} className="glass-panel border-primary/20 text-black placeholder:text-gray-500 focus:border-primary/50 transition-all duration-300 hover:scale-[1.01] bg-white/95" />
                         </FormControl>
-                        <FormMessage className="text-red-600" />
+                        <FormMessage className="text-neutral-950" />
                       </FormItem>} />
 
                   <div className="flex gap-4 pt-4">
