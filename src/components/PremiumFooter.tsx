@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Satellite, Mail, Phone, MapPin, Globe, Twitter, Linkedin, Github } from 'lucide-react';
@@ -95,7 +96,7 @@ const PremiumFooter = () => {
               </div>
               <div className="flex items-center gap-3 text-white/70">
                 <MapPin className="h-5 w-5 text-copper" />
-                <span className="font-premium-sans">Bangalore, India</span>
+                <span className="font-premium-sans">San Francisco, CA</span>
               </div>
             </div>
 
