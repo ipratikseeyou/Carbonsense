@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -76,7 +75,7 @@ const Navigation = () => {
               asChild
               variant="premium"
               size="default"
-              className="ml-4"
+              className="ml-4 text-white hover:text-white"
             >
               <Link to="/projects/upload">
                 <Plus className="h-4 w-4 mr-2" />
@@ -129,7 +128,7 @@ const Navigation = () => {
               asChild
               variant="premium"
               size="default"
-              className="w-full justify-start"
+              className="w-full justify-start text-white hover:text-white"
               onClick={() => setIsMobileMenuOpen(false)}
             >
               <Link to="/projects/upload">
