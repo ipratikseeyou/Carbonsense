@@ -13,6 +13,7 @@ import { toast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Navigation from '@/components/Navigation';
 import MapLocationPicker from '@/components/MapLocationPicker';
+import ImageCoordinateExtractor from '@/components/ImageCoordinateExtractor';
 import CurrencySelector from '@/components/CurrencySelector';
 import { Upload, MapPin, Building, FileText, TreePine, Calendar, Shield } from 'lucide-react';
 import { apiEndpoints } from '@/config/api';
@@ -291,6 +292,12 @@ const ProjectUploadEnhanced = () => {
                           </FormItem>
                         )}
                       />
+
+                      <div className="mt-6">
+                        <ImageCoordinateExtractor
+                          onCoordinatesExtracted={handleLocationSelect}
+                        />
+                      </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
