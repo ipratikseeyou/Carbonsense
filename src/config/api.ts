@@ -47,20 +47,3 @@ export const makeApiRequest = async (
     throw error;
   }
 };
-
-// Legacy API endpoints for backward compatibility
-const baseUrl = API_CONFIG.BACKEND_URL.endsWith('/') ? API_CONFIG.BACKEND_URL.slice(0, -1) : API_CONFIG.BACKEND_URL;
-
-export const apiEndpoints = {
-  // Projects endpoints
-  projects: `${baseUrl}/projects`,
-  projectById: (id: number | string) => `${baseUrl}/projects/${id}`,
-  analyzeProject: (id: number | string) => `${baseUrl}/projects/${id}/analyze`,
-  projectReport: (id: number | string) => `${baseUrl}/projects/${id}/report`,
-  
-  // Currency endpoint
-  currencies: `${baseUrl}/currencies`,
-  
-  // Health check
-  health: `${baseUrl}/`,
-};
