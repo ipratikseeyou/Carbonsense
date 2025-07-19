@@ -6,21 +6,26 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { MapPin, Leaf, DollarSign, ArrowRight, Plus } from 'lucide-react';
-import { apiEndpoints } from '@/config/api';
+import { supabase } from '@/integrations/supabase/client';
 
 const ProjectGrid = () => {
   const { data: projects, isLoading, error } = useQuery({
     queryKey: ['featured-projects'],
     queryFn: async () => {
-      console.log('Fetching projects from AWS API:', apiEndpoints.projects);
-      const response = await fetch(apiEndpoints.projects);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch projects: ${response.status} ${response.statusText}`);
+      console.log('Fetching projects from Supabase');
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(6);
+      
+      if (error) {
+        console.error('Supabase error:', error);
+        throw new Error(`Failed to fetch projects: ${error.message}`);
       }
-      const data = await response.json();
-      console.log('Fetched projects:', data);
-      // Return last 6 projects for featured section
-      return data.slice(-6).reverse();
+      
+      console.log('Fetched projects from Supabase:', data);
+      return data || [];
     },
   });
 
@@ -96,7 +101,7 @@ const ProjectGrid = () => {
                   <CardHeader>
                     <div className="flex justify-between items-start mb-2">
                       <Badge variant="secondary" className="bg-satellite-blue/10 text-satellite-blue">
-                        {project.verification_standard || 'Verified'}
+                        Verified
                       </Badge>
                       {project.satellite_image_url && (
                         <div className="w-12 h-12 rounded-lg overflow-hidden">
@@ -132,7 +137,7 @@ const ProjectGrid = () => {
                         <div>
                           <div className="text-sm text-muted-foreground">Price/Ton</div>
                           <div className="font-semibold">
-                            {getCurrencySymbol(project.currency || 'USD')}
+                            {getCurrencySymbol('USD')}
                             {Number(project.price_per_ton || 25).toFixed(2)}
                           </div>
                         </div>

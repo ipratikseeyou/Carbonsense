@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Navigation from '@/components/Navigation';
 import ProjectCard from '@/components/ProjectCard';
 import { Search, Grid, List, Plus, DollarSign, Leaf } from 'lucide-react';
-import { apiEndpoints } from '@/config/api';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
 interface Project {
@@ -17,22 +17,8 @@ interface Project {
   coordinates: string;
   carbon_tons: number;
   price_per_ton?: number;
-  area?: number;
-  forest_type?: string;
-  project_area?: number;
-  methodology?: string;
-  verification?: string;
-  stakeholder?: string;
-  developer?: string;
   satellite_image_url?: string;
-  total_value?: number;
   created_at?: string;
-  updated_at?: string;
-  currency?: string;
-  verification_standard?: string;
-  developer_name?: string;
-  baseline_methodology?: string;
-  uncertainty_percentage?: number;
 }
 
 const ProjectDashboard = () => {
@@ -42,12 +28,19 @@ const ProjectDashboard = () => {
   const { data: projects, isLoading, error, refetch } = useQuery({
     queryKey: ['projects'],
     queryFn: async () => {
-      console.log('Fetching projects from AWS API');
-      const response = await fetch(apiEndpoints.projects);
-      if (!response.ok) throw new Error('Failed to fetch projects');
-      const data = await response.json();
-      console.log('Fetched projects:', data);
-      return data;
+      console.log('Fetching projects from Supabase');
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('Supabase error:', error);
+        throw new Error(`Failed to fetch projects: ${error.message}`);
+      }
+      
+      console.log('Fetched projects from Supabase:', data);
+      return data || [];
     },
   });
 
@@ -65,12 +58,15 @@ const ProjectDashboard = () => {
     if (!window.confirm('Are you sure you want to delete this project?')) return;
 
     try {
-      console.log(`Deleting project via AWS API: ${projectId}`);
-      const response = await fetch(apiEndpoints.projectById(projectId), {
-        method: 'DELETE',
-      });
+      console.log(`Deleting project from Supabase: ${projectId}`);
+      const { error } = await supabase
+        .from('projects')
+        .delete()
+        .eq('id', projectId);
 
-      if (!response.ok) throw new Error('Failed to delete project');
+      if (error) {
+        throw new Error(`Failed to delete project: ${error.message}`);
+      }
 
       toast({
         title: 'Success!',

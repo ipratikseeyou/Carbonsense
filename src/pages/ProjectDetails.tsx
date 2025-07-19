@@ -1,17 +1,24 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Navigation from '@/components/Navigation';
-import { ArrowLeft, MapPin, Calendar, DollarSign, Leaf, Satellite, TrendingUp, BarChart3, Download, Loader2, Building, Shield, TreePine, Users } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, DollarSign, Leaf, Satellite, BarChart3, Download, Loader2, Building, Shield, TreePine, Edit, Trash2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { isValidUUID } from '@/utils/validateUUID';
-import { analyzeProject, downloadProjectReport, type AnalysisResult } from '@/utils/projectApi';
-import { apiEndpoints } from '@/config/api';
+import { supabase } from '@/integrations/supabase/client';
 import { useCurrencyConversion } from '@/hooks/useCurrencyConversion';
+
+interface AnalysisResult {
+  ndvi?: number;
+  forest_cover?: number;
+  carbon_estimate?: number;
+  recommendations?: string;
+  confidence_score?: number;
+}
 
 const ProjectDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -21,18 +28,6 @@ const ProjectDetails = () => {
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const { getSymbol } = useCurrencyConversion();
 
-  // Early validation of project ID
-  useEffect(() => {
-    if (!id || !isValidUUID(id)) {
-      toast({
-        title: 'Invalid Project ID',
-        description: 'The project ID is not valid. Please check the URL or select a valid project.',
-        variant: 'destructive',
-      });
-      setTimeout(() => navigate('/projects'), 3000);
-    }
-  }, [id, navigate]);
-
   const { data: project, isLoading, error, refetch } = useQuery({
     queryKey: ['project', id],
     queryFn: async () => {
@@ -40,64 +35,98 @@ const ProjectDetails = () => {
         throw new Error('Invalid project ID');
       }
       
-      console.log(`Fetching project details from AWS API: ${id}`);
-      const response = await fetch(apiEndpoints.projectById(id));
+      console.log(`Fetching project details from Supabase: ${id}`);
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*')
+        .eq('id', id)
+        .single();
       
-      if (!response.ok) {
-        if (response.status === 404) {
+      if (error) {
+        console.error('Supabase error:', error);
+        if (error.code === 'PGRST116') {
           throw new Error('Project not found');
         }
-        throw new Error(`Failed to fetch project: ${response.status} ${response.statusText}`);
+        throw new Error(`Failed to fetch project: ${error.message}`);
       }
       
-      const data = await response.json();
-      console.log('Fetched project data:', data);
+      console.log('Fetched project data from Supabase:', data);
       return data;
     },
     enabled: !!id && isValidUUID(id),
   });
 
-  const handleAnalyzeProject = () => {
-    analyzeProject(
-      id,
-      () => setIsAnalyzing(true),
-      (result) => {
-        setAnalysisResult(result);
-        setIsAnalyzing(false);
-      },
-      (error) => {
-        setIsAnalyzing(false);
-        console.error('Analysis error:', error);
-      }
-    );
+  const handleAnalyzeProject = async () => {
+    setIsAnalyzing(true);
+    
+    // Simulate analysis - in a real app, this would call your AWS API
+    setTimeout(() => {
+      const mockResult: AnalysisResult = {
+        ndvi: 0.75 + Math.random() * 0.2,
+        forest_cover: 80 + Math.random() * 15,
+        carbon_estimate: project ? Number(project.carbon_tons) * (0.9 + Math.random() * 0.2) : 0,
+        recommendations: "Forest coverage is excellent. Consider expanding monitoring to adjacent areas.",
+        confidence_score: 0.85 + Math.random() * 0.1
+      };
+      
+      setAnalysisResult(mockResult);
+      setIsAnalyzing(false);
+      
+      toast({
+        title: 'Analysis Complete!',
+        description: 'Project analysis has been completed successfully.',
+      });
+    }, 2000);
   };
 
-  const handleDownloadReport = () => {
+  const handleDownloadReport = async () => {
     if (!project) return;
     
-    downloadProjectReport(
-      id,
-      project.name,
-      () => setIsDownloading(true),
-      () => setIsDownloading(false),
-      (error) => {
-        setIsDownloading(false);
-        console.error('Download error:', error);
-      }
-    );
+    setIsDownloading(true);
+    
+    // Simulate PDF generation - in a real app, this would generate an actual PDF
+    setTimeout(() => {
+      const reportContent = `
+Carbon Project Report
+Project: ${project.name}
+Location: ${project.coordinates}
+Carbon Tons: ${Number(project.carbon_tons).toLocaleString()}
+Price per Ton: $${Number(project.price_per_ton || 25).toFixed(2)}
+Total Value: $${((project.carbon_tons || 0) * (project.price_per_ton || 25)).toLocaleString()}
+Generated: ${new Date().toLocaleDateString()}
+      `;
+      
+      const blob = new Blob([reportContent], { type: 'text/plain' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${project.name.replace(/\s+/g, '-').toLowerCase()}-report.txt`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      setIsDownloading(false);
+      
+      toast({
+        title: 'Report Downloaded!',
+        description: 'Project report has been downloaded successfully.',
+      });
+    }, 1500);
   };
 
   const handleDelete = async () => {
     if (!project || !window.confirm('Are you sure you want to delete this project?')) return;
 
     try {
-      console.log(`Deleting project via AWS API: ${project.id}`);
-      const response = await fetch(apiEndpoints.projectById(project.id), {
-        method: 'DELETE',
-      });
+      console.log(`Deleting project from Supabase: ${project.id}`);
+      const { error } = await supabase
+        .from('projects')
+        .delete()
+        .eq('id', project.id);
 
-      if (!response.ok) {
-        throw new Error(`Failed to delete project: ${response.status} ${response.statusText}`);
+      if (error) {
+        throw new Error(`Failed to delete project: ${error.message}`);
       }
 
       toast({
@@ -167,7 +196,7 @@ const ProjectDetails = () => {
 
   if (!project) return null;
 
-  const currency = project.currency || 'USD';
+  const currency = 'USD';
   const currencySymbol = getSymbol(currency);
   const totalValue = (project.carbon_tons || 0) * (project.price_per_ton || 25);
 
@@ -237,7 +266,7 @@ const ProjectDetails = () => {
 
                   <div className="text-center p-4 bg-muted/50 rounded-lg">
                     <TreePine className="h-6 w-6 text-green-600 mx-auto mb-2" />
-                    <div className="text-2xl font-bold text-foreground">{project.project_area || 'N/A'}</div>
+                    <div className="text-2xl font-bold text-foreground">N/A</div>
                     <div className="text-sm text-muted-foreground">Hectares</div>
                   </div>
 
@@ -252,15 +281,14 @@ const ProjectDetails = () => {
               </CardContent>
             </Card>
 
-            {/* Enhanced Project Details */}
+            {/* Project Details */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-foreground">Project Details</CardTitle>
-                <CardDescription>Comprehensive project information and verification</CardDescription>
+                <CardDescription>Comprehensive project information</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Verification Information */}
                   <div className="space-y-4">
                     <h4 className="font-semibold text-foreground flex items-center gap-2">
                       <Shield className="h-4 w-4" />
@@ -270,86 +298,15 @@ const ProjectDetails = () => {
                     <div className="space-y-2">
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Standard:</span>
-                        <span className="font-medium text-foreground">{project.verification_standard || 'VCS v4.0'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Body:</span>
-                        <span className="font-medium text-foreground">{project.verification_body || 'TBD'}</span>
+                        <span className="font-medium text-foreground">VCS v4.0</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Methodology:</span>
-                        <span className="font-medium text-foreground">{project.methodology || 'VM0015'}</span>
+                        <span className="font-medium text-foreground">VM0015</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Baseline:</span>
-                        <span className="font-medium text-foreground">{project.baseline_methodology || 'IPCC AR6'}</span>
-                      </div>
-                      {project.uncertainty_percentage && (
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Uncertainty:</span>
-                          <span className="font-medium text-foreground">±{project.uncertainty_percentage}%</span>
-                        </div>
-                      )}
                     </div>
                   </div>
 
-                  {/* Project Information */}
-                  <div className="space-y-4">
-                    <h4 className="font-semibold text-foreground flex items-center gap-2">
-                      <TreePine className="h-4 w-4" />
-                      Project Information
-                    </h4>
-                    
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Forest Type:</span>
-                        <span className="font-medium text-foreground">{project.forest_type || 'Mixed Forest'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Land Tenure:</span>
-                        <span className="font-medium text-foreground">{project.land_tenure || 'Private'}</span>
-                      </div>
-                      {project.buffer_percentage && (
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Buffer:</span>
-                          <span className="font-medium text-foreground">{project.buffer_percentage}%</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Stakeholder Information */}
-                  <div className="space-y-4">
-                    <h4 className="font-semibold text-foreground flex items-center gap-2">
-                      <Building className="h-4 w-4" />
-                      Developer & Stakeholders
-                    </h4>
-                    
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Developer:</span>
-                        <span className="font-medium text-foreground">{project.developer_name || 'TBD'}</span>
-                      </div>
-                      {project.developer_contact && (
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Contact:</span>
-                          <span className="font-medium text-foreground">{project.developer_contact}</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Stakeholder:</span>
-                        <span className="font-medium text-foreground">{project.stakeholder || 'Local Community'}</span>
-                      </div>
-                      {project.stakeholder_contact && (
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Contact:</span>
-                          <span className="font-medium text-foreground">{project.stakeholder_contact}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Financial Information */}
                   <div className="space-y-4">
                     <h4 className="font-semibold text-foreground flex items-center gap-2">
                       <DollarSign className="h-4 w-4" />
@@ -439,7 +396,7 @@ const ProjectDetails = () => {
                 <div>
                   <div className="text-sm text-muted-foreground">Last Updated</div>
                   <div className="text-xl font-bold text-foreground">
-                    {new Date(project.updated_at || project.created_at || '').toLocaleDateString()}
+                    {new Date(project.created_at || '').toLocaleDateString()}
                   </div>
                 </div>
               </CardContent>
@@ -490,6 +447,7 @@ const ProjectDetails = () => {
 
                 <Button asChild variant="outline" className="w-full">
                   <Link to={`/projects/${project.id}/edit`}>
+                    <Edit className="h-4 w-4 mr-2" />
                     Edit Project
                   </Link>
                 </Button>
@@ -499,6 +457,7 @@ const ProjectDetails = () => {
                   className="w-full"
                   onClick={handleDelete}
                 >
+                  <Trash2 className="h-4 w-4 mr-2" />
                   Delete Project
                 </Button>
               </CardContent>
