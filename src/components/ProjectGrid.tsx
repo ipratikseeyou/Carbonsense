@@ -2,29 +2,65 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { MapPin, Leaf, DollarSign, ArrowRight, Plus } from 'lucide-react';
+import { apiEndpoints } from '@/config/api';
 
 const ProjectGrid = () => {
-  const { data: projects, isLoading } = useQuery({
+  const { data: projects, isLoading, error } = useQuery({
     queryKey: ['featured-projects'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('projects')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(6);
-      
-      if (error) throw error;
-      return data;
+      console.log('Fetching projects from AWS API:', apiEndpoints.projects);
+      const response = await fetch(apiEndpoints.projects);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch projects: ${response.status} ${response.statusText}`);
+      }
+      const data = await response.json();
+      console.log('Fetched projects:', data);
+      // Return last 6 projects for featured section
+      return data.slice(-6).reverse();
     },
   });
 
+  const scrollToBottom = () => {
+    window.scrollTo({
+      top: document.documentElement.scrollHeight,
+      behavior: 'smooth'
+    });
+  };
+
+  const getCurrencySymbol = (currency: string) => {
+    switch (currency) {
+      case 'EUR': return '€';
+      case 'GBP': return '£';
+      case 'JPY': return '¥';
+      case 'INR': return '₹';
+      default: return '$';
+    }
+  };
+
+  if (error) {
+    console.error('Error fetching projects:', error);
+    return (
+      <section id="projects-section" className="py-20 bg-background">
+        <div className="container mx-auto px-4">
+          <div className="text-center">
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              Featured Carbon Projects
+            </h2>
+            <p className="text-muted-foreground">
+              Unable to load projects. Please check your connection and try again.
+            </p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
-    <section className="py-20 bg-background">
+    <section id="projects-section" className="py-20 bg-background">
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
@@ -60,7 +96,7 @@ const ProjectGrid = () => {
                   <CardHeader>
                     <div className="flex justify-between items-start mb-2">
                       <Badge variant="secondary" className="bg-satellite-blue/10 text-satellite-blue">
-                        Verified
+                        {project.verification_standard || 'Verified'}
                       </Badge>
                       {project.satellite_image_url && (
                         <div className="w-12 h-12 rounded-lg overflow-hidden">
@@ -95,7 +131,10 @@ const ProjectGrid = () => {
                         <DollarSign className="h-4 w-4 text-blue-500" />
                         <div>
                           <div className="text-sm text-muted-foreground">Price/Ton</div>
-                          <div className="font-semibold">${Number(project.price_per_ton || 25).toFixed(2)}</div>
+                          <div className="font-semibold">
+                            {getCurrencySymbol(project.currency || 'USD')}
+                            {Number(project.price_per_ton || 25).toFixed(2)}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -112,11 +151,13 @@ const ProjectGrid = () => {
             </div>
 
             <div className="text-center">
-              <Button asChild variant="satellite" size="lg">
-                <Link to="/projects">
-                  View All Projects
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
+              <Button 
+                onClick={scrollToBottom}
+                variant="satellite" 
+                size="lg"
+              >
+                Explore All Projects
+                <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </div>
           </>

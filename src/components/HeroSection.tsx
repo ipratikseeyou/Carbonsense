@@ -1,6 +1,8 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowDown, Satellite, Target, TrendingUp } from 'lucide-react';
+import { scrollToProjects } from '@/utils/scrollUtils';
 import heroImage from '@/assets/hero-satellite-earth.jpg';
 
 const HeroSection = () => {
@@ -50,7 +52,12 @@ const HeroSection = () => {
 
         {/* CTA Buttons */}
         <div className="flex flex-col md:flex-row gap-4 justify-center items-center mb-12">
-          <Button variant="satellite" size="xl" className="group">
+          <Button 
+            variant="satellite" 
+            size="xl" 
+            className="group"
+            onClick={scrollToProjects}
+          >
             Explore Projects
             <ArrowDown className="group-hover:translate-y-1 transition-transform duration-300" />
           </Button>
@@ -81,9 +88,13 @@ const HeroSection = () => {
       </div>
 
       {/* Scroll Indicator */}
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
+      <button
+        onClick={scrollToProjects}
+        className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce cursor-pointer hover:text-primary-glow transition-colors"
+        aria-label="Scroll to projects"
+      >
         <ArrowDown className="h-6 w-6 text-white/60" />
-      </div>
+      </button>
     </section>
   );
 };
