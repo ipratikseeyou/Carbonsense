@@ -127,12 +127,15 @@ const ProjectUploadEnhanced = () => {
 
       if (!response.ok) throw new Error('Failed to create project');
 
+      const createdProject = await response.json();
+      const projectId = createdProject.id;
+      
       toast({
         title: 'Success!',
         description: 'Project uploaded successfully.',
       });
 
-      navigate('/projects');
+      navigate(`/projects/${projectId}`);
     } catch (error) {
       console.error('Error uploading project:', error);
       toast({
