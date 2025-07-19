@@ -12,7 +12,6 @@ import { toast } from '@/components/ui/use-toast';
 import Navigation from '@/components/Navigation';
 import MapLocationPicker from '@/components/MapLocationPicker';
 import { Upload, MapPin, Satellite, Shield, Zap } from 'lucide-react';
-
 const projectFormSchema = z.object({
   name: z.string().min(1, 'Project name is required').max(100, 'Name too long'),
   coordinates: z.string().regex(/^-?\d+\.?\d*,-?\d+\.?\d*$/, 'Invalid coordinates format. Use: latitude,longitude (e.g., 40.7128,-74.0060)'),
@@ -20,9 +19,7 @@ const projectFormSchema = z.object({
   price_per_ton: z.number().min(0).optional(),
   satellite_image_url: z.string().url().optional().or(z.literal(''))
 });
-
 type ProjectFormData = z.infer<typeof projectFormSchema>;
-
 const ProjectUpload = () => {
   const navigate = useNavigate();
 
@@ -31,7 +28,6 @@ const ProjectUpload = () => {
     lat: 40.7128,
     lng: -74.0060
   });
-
   const form = useForm<ProjectFormData>({
     resolver: zodResolver(projectFormSchema),
     defaultValues: {
@@ -60,7 +56,6 @@ const ProjectUpload = () => {
       }
     }
   }, [form]);
-
   const handleLocationSelect = (lat: number, lng: number) => {
     console.log(`Selected location: ${lat}, ${lng}`);
     setSelectedLocation({
@@ -77,7 +72,6 @@ const ProjectUpload = () => {
       description: `Coordinates set to: ${coordString}`
     });
   };
-
   const onSubmit = async (data: ProjectFormData) => {
     try {
       console.log('Submitting project with data:', data);
@@ -105,7 +99,6 @@ const ProjectUpload = () => {
       });
     }
   };
-
   return <div className="min-h-screen bg-gradient-hero relative overflow-hidden">
       {/* Premium Background Effects */}
       <div className="absolute inset-0 bg-gradient-to-br from-space-navy via-space-navy-light to-primary/10"></div>
@@ -140,10 +133,10 @@ const ProjectUpload = () => {
               <Zap className="w-4 h-4 text-gold-warm animate-color-shift" />
             </div>
             
-            <h1 className="text-4xl md:text-5xl font-premium-serif font-bold text-black mb-4 animate-gentle-bounce">
+            <h1 className="text-4xl font-premium-serif font-bold mb-4 animate-gentle-bounce text-slate-50 md:text-5xl">
               Upload New <span className="bg-gradient-copper bg-clip-text text-transparent">Project</span>
             </h1>
-            <p className="text-lg text-black font-premium-sans max-w-lg mx-auto">
+            <p className="text-lg font-premium-sans max-w-lg mx-auto text-slate-50">
               Add a new carbon offset project to our premium satellite monitoring network
             </p>
           </div>
@@ -243,5 +236,4 @@ const ProjectUpload = () => {
       </div>
     </div>;
 };
-
 export default ProjectUpload;
