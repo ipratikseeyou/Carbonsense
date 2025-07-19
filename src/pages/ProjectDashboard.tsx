@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -8,8 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Navigation from '@/components/Navigation';
 import ProjectCard from '@/components/ProjectCard';
 import { Search, Grid, List, Plus, DollarSign, Leaf } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { apiEndpoints } from '@/config/api';
+import { toast } from '@/hooks/use-toast';
 
 interface Project {
   id: string;
@@ -29,6 +29,10 @@ interface Project {
   created_at?: string;
   updated_at?: string;
   currency?: string;
+  verification_standard?: string;
+  developer_name?: string;
+  baseline_methodology?: string;
+  uncertainty_percentage?: number;
 }
 
 const ProjectDashboard = () => {
@@ -38,34 +42,14 @@ const ProjectDashboard = () => {
   const { data: projects, isLoading, error, refetch } = useQuery({
     queryKey: ['projects'],
     queryFn: async () => {
+      console.log('Fetching projects from AWS API');
       const response = await fetch(apiEndpoints.projects);
       if (!response.ok) throw new Error('Failed to fetch projects');
-      return response.json();
+      const data = await response.json();
+      console.log('Fetched projects:', data);
+      return data;
     },
   });
-
-  // Real-time subscription for projects
-  useEffect(() => {
-    const channel = supabase
-      .channel('projects-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'projects'
-        },
-        () => {
-          // Refetch projects when changes occur
-          window.location.reload();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
 
   const filteredProjects = projects?.filter(project =>
     project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -76,6 +60,34 @@ const ProjectDashboard = () => {
   const averagePrice = projects?.length 
     ? projects.reduce((sum, project) => sum + Number(project.price_per_ton || 25), 0) / projects.length
     : 0;
+
+  const handleDelete = async (projectId: string) => {
+    if (!window.confirm('Are you sure you want to delete this project?')) return;
+
+    try {
+      console.log(`Deleting project via AWS API: ${projectId}`);
+      const response = await fetch(apiEndpoints.projectById(projectId), {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) throw new Error('Failed to delete project');
+
+      toast({
+        title: 'Success!',
+        description: 'Project deleted successfully.',
+      });
+
+      // Refetch projects list
+      refetch();
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete project. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
 
   if (error) {
     return (
@@ -117,33 +129,33 @@ const ProjectDashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Projects</CardTitle>
+              <CardTitle className="text-sm font-medium text-foreground">Total Projects</CardTitle>
               <Grid className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{projects?.length || 0}</div>
+              <div className="text-2xl font-bold text-foreground">{projects?.length || 0}</div>
               <p className="text-xs text-muted-foreground">Active monitoring</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Carbon Tons</CardTitle>
+              <CardTitle className="text-sm font-medium text-foreground">Total Carbon Tons</CardTitle>
               <Leaf className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{totalCarbonTons.toLocaleString()}</div>
+              <div className="text-2xl font-bold text-foreground">{totalCarbonTons.toLocaleString()}</div>
               <p className="text-xs text-muted-foreground">CO₂ equivalent</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Average Price</CardTitle>
+              <CardTitle className="text-sm font-medium text-foreground">Average Price</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${averagePrice.toFixed(2)}</div>
+              <div className="text-2xl font-bold text-foreground">${averagePrice.toFixed(2)}</div>
               <p className="text-xs text-muted-foreground">Per ton CO₂</p>
             </CardContent>
           </Card>
@@ -183,7 +195,7 @@ const ProjectDashboard = () => {
         {isLoading ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-satellite-blue mx-auto"></div>
-            <p className="text-muted-foreground mt-4">Loading projects...</p>
+            <p className="text-foreground mt-4">Loading projects...</p>
           </div>
         ) : filteredProjects.length === 0 ? (
           <Card className="text-center py-12">

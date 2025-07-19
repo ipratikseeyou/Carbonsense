@@ -1,15 +1,17 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Navigation from '@/components/Navigation';
-import { ArrowLeft, MapPin, Calendar, DollarSign, Leaf, Satellite, TrendingUp, BarChart3, Download, Loader2 } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, DollarSign, Leaf, Satellite, TrendingUp, BarChart3, Download, Loader2, Building, Shield, TreePine, Users } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { isValidUUID } from '@/utils/validateUUID';
 import { analyzeProject, downloadProjectReport, type AnalysisResult } from '@/utils/projectApi';
+import { apiEndpoints } from '@/config/api';
+import { useCurrencyConversion } from '@/hooks/useCurrencyConversion';
 
 const ProjectDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -17,6 +19,7 @@ const ProjectDetails = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+  const { getSymbol } = useCurrencyConversion();
 
   // Early validation of project ID
   useEffect(() => {
@@ -26,42 +29,29 @@ const ProjectDetails = () => {
         description: 'The project ID is not valid. Please check the URL or select a valid project.',
         variant: 'destructive',
       });
-      // Navigate back to projects list after a short delay
       setTimeout(() => navigate('/projects'), 3000);
     }
   }, [id, navigate]);
 
-  const { data: project, isLoading, error } = useQuery({
+  const { data: project, isLoading, error, refetch } = useQuery({
     queryKey: ['project', id],
     queryFn: async () => {
       if (!id || !isValidUUID(id)) {
         throw new Error('Invalid project ID');
       }
       
-      const { data, error } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('id', id)
-        .single();
+      console.log(`Fetching project details from AWS API: ${id}`);
+      const response = await fetch(apiEndpoints.projectById(id));
       
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!id && isValidUUID(id),
-  });
-
-  const { data: carbonData } = useQuery({
-    queryKey: ['carbon-data', id],
-    queryFn: async () => {
-      if (!id || !isValidUUID(id)) return [];
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error('Project not found');
+        }
+        throw new Error(`Failed to fetch project: ${response.status} ${response.statusText}`);
+      }
       
-      const { data, error } = await supabase
-        .from('carbon_data')
-        .select('*')
-        .eq('project_id', id)
-        .order('measurement_date', { ascending: true });
-      
-      if (error) throw error;
+      const data = await response.json();
+      console.log('Fetched project data:', data);
       return data;
     },
     enabled: !!id && isValidUUID(id),
@@ -101,12 +91,14 @@ const ProjectDetails = () => {
     if (!project || !window.confirm('Are you sure you want to delete this project?')) return;
 
     try {
-      const { error } = await supabase
-        .from('projects')
-        .delete()
-        .eq('id', project.id);
+      console.log(`Deleting project via AWS API: ${project.id}`);
+      const response = await fetch(apiEndpoints.projectById(project.id), {
+        method: 'DELETE',
+      });
 
-      if (error) throw error;
+      if (!response.ok) {
+        throw new Error(`Failed to delete project: ${response.status} ${response.statusText}`);
+      }
 
       toast({
         title: 'Success!',
@@ -166,7 +158,7 @@ const ProjectDetails = () => {
         <div className="container mx-auto px-4 py-8">
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-satellite-blue mx-auto"></div>
-            <p className="text-white mt-4">Loading project details...</p>
+            <p className="text-foreground mt-4">Loading project details...</p>
           </div>
         </div>
       </div>
@@ -175,10 +167,9 @@ const ProjectDetails = () => {
 
   if (!project) return null;
 
-  const totalMeasurements = carbonData?.length || 0;
-  const averageConfidence = carbonData?.length 
-    ? carbonData.reduce((sum, data) => sum + (Number(data.confidence_score) || 0), 0) / carbonData.length
-    : 0;
+  const currency = project.currency || 'USD';
+  const currencySymbol = getSymbol(currency);
+  const totalValue = (project.carbon_tons || 0) * (project.price_per_ton || 25);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-satellite-blue/5">
@@ -187,7 +178,12 @@ const ProjectDetails = () => {
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex items-center gap-4 mb-6">
-          <Button variant="outline" size="sm" onClick={() => navigate('/projects')} className="text-white border-white/20 hover:text-white hover:bg-white/10">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => navigate('/projects')} 
+            className="text-foreground border-border hover:text-foreground hover:bg-accent"
+          >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Projects
           </Button>
@@ -200,8 +196,8 @@ const ProjectDetails = () => {
               <CardHeader>
                 <div className="flex justify-between items-start">
                   <div>
-                    <CardTitle className="text-2xl mb-2">{project.name}</CardTitle>
-                    <CardDescription className="flex items-center gap-2 text-base">
+                    <CardTitle className="text-2xl mb-2 text-foreground">{project.name}</CardTitle>
+                    <CardDescription className="flex items-center gap-2 text-base text-muted-foreground">
                       <MapPin className="h-4 w-4" />
                       {project.coordinates}
                     </CardDescription>
@@ -227,28 +223,149 @@ const ProjectDetails = () => {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="text-center p-4 bg-muted/50 rounded-lg">
                     <Leaf className="h-6 w-6 text-green-500 mx-auto mb-2" />
-                    <div className="text-2xl font-bold">{Number(project.carbon_tons).toLocaleString()}</div>
+                    <div className="text-2xl font-bold text-foreground">{Number(project.carbon_tons).toLocaleString()}</div>
                     <div className="text-sm text-muted-foreground">Carbon Tons</div>
                   </div>
 
                   <div className="text-center p-4 bg-muted/50 rounded-lg">
                     <DollarSign className="h-6 w-6 text-blue-500 mx-auto mb-2" />
-                    <div className="text-2xl font-bold">${Number(project.price_per_ton || 25).toFixed(2)}</div>
+                    <div className="text-2xl font-bold text-foreground">
+                      {currencySymbol}{Number(project.price_per_ton || 25).toFixed(2)}
+                    </div>
                     <div className="text-sm text-muted-foreground">Per Ton</div>
                   </div>
 
                   <div className="text-center p-4 bg-muted/50 rounded-lg">
-                    <TrendingUp className="h-6 w-6 text-purple-500 mx-auto mb-2" />
-                    <div className="text-2xl font-bold">{totalMeasurements}</div>
-                    <div className="text-sm text-muted-foreground">Measurements</div>
+                    <TreePine className="h-6 w-6 text-green-600 mx-auto mb-2" />
+                    <div className="text-2xl font-bold text-foreground">{project.project_area || 'N/A'}</div>
+                    <div className="text-sm text-muted-foreground">Hectares</div>
                   </div>
 
                   <div className="text-center p-4 bg-muted/50 rounded-lg">
                     <Calendar className="h-6 w-6 text-orange-500 mx-auto mb-2" />
-                    <div className="text-2xl font-bold">
+                    <div className="text-2xl font-bold text-foreground">
                       {new Date(project.created_at || '').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     </div>
                     <div className="text-sm text-muted-foreground">Created</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Enhanced Project Details */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-foreground">Project Details</CardTitle>
+                <CardDescription>Comprehensive project information and verification</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Verification Information */}
+                  <div className="space-y-4">
+                    <h4 className="font-semibold text-foreground flex items-center gap-2">
+                      <Shield className="h-4 w-4" />
+                      Verification & Standards
+                    </h4>
+                    
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Standard:</span>
+                        <span className="font-medium text-foreground">{project.verification_standard || 'VCS v4.0'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Body:</span>
+                        <span className="font-medium text-foreground">{project.verification_body || 'TBD'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Methodology:</span>
+                        <span className="font-medium text-foreground">{project.methodology || 'VM0015'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Baseline:</span>
+                        <span className="font-medium text-foreground">{project.baseline_methodology || 'IPCC AR6'}</span>
+                      </div>
+                      {project.uncertainty_percentage && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Uncertainty:</span>
+                          <span className="font-medium text-foreground">±{project.uncertainty_percentage}%</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Project Information */}
+                  <div className="space-y-4">
+                    <h4 className="font-semibold text-foreground flex items-center gap-2">
+                      <TreePine className="h-4 w-4" />
+                      Project Information
+                    </h4>
+                    
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Forest Type:</span>
+                        <span className="font-medium text-foreground">{project.forest_type || 'Mixed Forest'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Land Tenure:</span>
+                        <span className="font-medium text-foreground">{project.land_tenure || 'Private'}</span>
+                      </div>
+                      {project.buffer_percentage && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Buffer:</span>
+                          <span className="font-medium text-foreground">{project.buffer_percentage}%</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Stakeholder Information */}
+                  <div className="space-y-4">
+                    <h4 className="font-semibold text-foreground flex items-center gap-2">
+                      <Building className="h-4 w-4" />
+                      Developer & Stakeholders
+                    </h4>
+                    
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Developer:</span>
+                        <span className="font-medium text-foreground">{project.developer_name || 'TBD'}</span>
+                      </div>
+                      {project.developer_contact && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Contact:</span>
+                          <span className="font-medium text-foreground">{project.developer_contact}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Stakeholder:</span>
+                        <span className="font-medium text-foreground">{project.stakeholder || 'Local Community'}</span>
+                      </div>
+                      {project.stakeholder_contact && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Contact:</span>
+                          <span className="font-medium text-foreground">{project.stakeholder_contact}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Financial Information */}
+                  <div className="space-y-4">
+                    <h4 className="font-semibold text-foreground flex items-center gap-2">
+                      <DollarSign className="h-4 w-4" />
+                      Financial Details
+                    </h4>
+                    
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Currency:</span>
+                        <span className="font-medium text-foreground">{currency}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Total Value:</span>
+                        <span className="font-medium text-green-600">{currencySymbol}{totalValue.toLocaleString()}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -258,7 +375,7 @@ const ProjectDetails = () => {
             {analysisResult && (
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-2 text-foreground">
                     <BarChart3 className="h-5 w-5" />
                     Analysis Results
                   </CardTitle>
@@ -288,41 +405,10 @@ const ProjectDetails = () => {
                     </div>
                     {analysisResult.recommendations && (
                       <div className="p-3 bg-muted/50 rounded-lg">
-                        <div className="text-sm font-medium mb-2">Recommendations</div>
+                        <div className="text-sm font-medium mb-2 text-foreground">Recommendations</div>
                         <p className="text-sm text-muted-foreground">{analysisResult.recommendations}</p>
                       </div>
                     )}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Carbon Measurements */}
-            {carbonData && carbonData.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Carbon Measurements</CardTitle>
-                  <CardDescription>
-                    Historical satellite measurements for this project
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {carbonData.slice(0, 5).map((data) => (
-                      <div key={data.id} className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
-                        <div>
-                          <div className="font-medium">{Number(data.carbon_tons).toLocaleString()} tons CO₂</div>
-                          <div className="text-sm text-muted-foreground">
-                            {new Date(data.measurement_date).toLocaleDateString()}
-                          </div>
-                        </div>
-                        {data.confidence_score && (
-                          <Badge variant="outline">
-                            {Number(data.confidence_score).toFixed(1)}% confidence
-                          </Badge>
-                        )}
-                      </div>
-                    ))}
                   </div>
                 </CardContent>
               </Card>
@@ -333,27 +419,27 @@ const ProjectDetails = () => {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Project Summary</CardTitle>
+                <CardTitle className="text-foreground">Project Summary</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
                   <div className="text-sm text-muted-foreground">Total Value</div>
-                  <div className="text-xl font-bold">
-                    ${(Number(project.carbon_tons) * Number(project.price_per_ton || 25)).toLocaleString()}
+                  <div className="text-xl font-bold text-foreground">
+                    {currencySymbol}{totalValue.toLocaleString()}
                   </div>
                 </div>
 
                 <div>
-                  <div className="text-sm text-muted-foreground">Average Confidence</div>
-                  <div className="text-xl font-bold">
-                    {averageConfidence > 0 ? `${averageConfidence.toFixed(1)}%` : 'N/A'}
+                  <div className="text-sm text-muted-foreground">Status</div>
+                  <div className="text-xl font-bold text-green-600">
+                    Active
                   </div>
                 </div>
 
                 <div>
                   <div className="text-sm text-muted-foreground">Last Updated</div>
-                  <div className="text-xl font-bold">
-                    {new Date(project.created_at || '').toLocaleDateString()}
+                  <div className="text-xl font-bold text-foreground">
+                    {new Date(project.updated_at || project.created_at || '').toLocaleDateString()}
                   </div>
                 </div>
               </CardContent>
@@ -361,7 +447,7 @@ const ProjectDetails = () => {
 
             <Card>
               <CardHeader>
-                <CardTitle>Actions</CardTitle>
+                <CardTitle className="text-foreground">Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <Button 
