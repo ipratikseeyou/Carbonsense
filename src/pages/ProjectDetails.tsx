@@ -5,12 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Navigation from '@/components/Navigation';
-import { ArrowLeft, MapPin, Calendar, DollarSign, Leaf, Satellite, BarChart3, Download, Loader2, Building, Shield, TreePine, Edit, Trash2 } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, DollarSign, Leaf, Satellite, BarChart3, Download, Loader2, Building, Shield, TreePine, Edit, Trash2, Calculator } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { isValidUUID } from '@/utils/validateUUID';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrencyConversion } from '@/hooks/useCurrencyConversion';
 import { generateProjectPDF } from '@/utils/generateProjectPDF';
+import { getBiomassPerHectare, getCalculationBreakdown, getForestBiomassData } from '@/utils/forestBiomassData';
 
 interface AnalysisResult {
   ndvi?: number;
@@ -203,6 +204,15 @@ const ProjectDetails = () => {
   const currencySymbol = getSymbol(currency);
   const totalValue = (project.carbon_tons || 0) * (project.price_per_ton || 25);
 
+  // Get forest-specific biomass data
+  const forestType = project.forest_type || 'Mixed Forest';
+  const biomassPerHa = getBiomassPerHectare(forestType);
+  const forestBiomassData = getForestBiomassData(forestType);
+  
+  // Get calculation breakdown if project area is available
+  const calculationBreakdown = project.project_area ? 
+    getCalculationBreakdown(project.project_area, forestType) : null;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-satellite-blue/5">
       <Navigation />
@@ -269,7 +279,9 @@ const ProjectDetails = () => {
 
                   <div className="text-center p-4 bg-muted/50 rounded-lg">
                     <TreePine className="h-6 w-6 text-green-600 mx-auto mb-2" />
-                    <div className="text-2xl font-bold text-foreground">N/A</div>
+                    <div className="text-2xl font-bold text-foreground">
+                      {project.project_area ? `${project.project_area}` : 'N/A'}
+                    </div>
                     <div className="text-sm text-muted-foreground">Hectares</div>
                   </div>
 
@@ -280,6 +292,58 @@ const ProjectDetails = () => {
                     </div>
                     <div className="text-sm text-muted-foreground">Created</div>
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Forest Biomass Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-foreground">
+                  <TreePine className="h-5 w-5" />
+                  Forest & Biomass Information
+                </CardTitle>
+                <CardDescription>IPCC-based forest biomass data and carbon calculations</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div>
+                      <div className="text-sm text-muted-foreground mb-1">Forest Type</div>
+                      <div className="text-lg font-semibold text-foreground">{forestType}</div>
+                    </div>
+                    
+                    <div>
+                      <div className="text-sm text-muted-foreground mb-1">Biomass per Hectare</div>
+                      <div className="text-lg font-semibold text-green-600">{biomassPerHa} t/ha</div>
+                      {forestBiomassData && (
+                        <div className="text-xs text-muted-foreground">
+                          Source: {forestBiomassData.source} ({forestBiomassData.year})
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {calculationBreakdown && (
+                    <div className="space-y-4">
+                      <div>
+                        <div className="text-sm text-muted-foreground mb-1">Calculation Formula</div>
+                        <div className="text-xs font-mono bg-muted p-2 rounded">
+                          {calculationBreakdown.formula}
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <div className="text-sm text-muted-foreground mb-1">Calculated Carbon Credits</div>
+                        <div className="text-lg font-semibold text-blue-600">
+                          {calculationBreakdown.carbonCredits.toLocaleString()} tCO₂e
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          Based on {calculationBreakdown.area} ha × {calculationBreakdown.forestCoverage}% coverage
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -400,6 +464,15 @@ const ProjectDetails = () => {
                     {new Date(project.created_at || '').toLocaleDateString()}
                   </div>
                 </div>
+
+                {calculationBreakdown && (
+                  <div>
+                    <div className="text-sm text-muted-foreground">Carbon Calculation</div>
+                    <div className="text-sm font-mono bg-muted p-2 rounded mt-1">
+                      {calculationBreakdown.area}ha × {calculationBreakdown.biomassPerHa}t/ha
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
 

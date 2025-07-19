@@ -18,6 +18,7 @@ import CurrencySelector from '@/components/CurrencySelector';
 import { Upload, MapPin, Building, FileText, TreePine, Calendar, Shield } from 'lucide-react';
 import { apiEndpoints } from '@/config/api';
 import { supabase } from '@/integrations/supabase/client';
+import { getForestTypes, calculateCarbonCredits } from '@/utils/forestBiomassData';
 
 const projectFormSchema = z.object({
   // Basic Information
@@ -56,17 +57,6 @@ const projectFormSchema = z.object({
 
 type ProjectFormData = z.infer<typeof projectFormSchema>;
 
-const forestTypes = [
-  'Tropical Evergreen',
-  'Tropical Deciduous',
-  'Dry Deciduous',
-  'Temperate Broadleaf',
-  'Temperate Coniferous',
-  'Boreal Forest',
-  'Mangrove',
-  'Mixed Forest',
-];
-
 const methodologies = [
   'IPCC AR6 Tier 1',
   'IPCC AR6 Tier 2',
@@ -87,6 +77,9 @@ const verificationStandards = [
 const ProjectUploadEnhanced = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('basic');
+  
+  // Get forest types from the biomass data utility
+  const forestTypes = getForestTypes();
   
   const form = useForm<ProjectFormData>({
     resolver: zodResolver(projectFormSchema),
@@ -109,6 +102,17 @@ const ProjectUploadEnhanced = () => {
       land_tenure: '',
     },
   });
+
+  // Watch for changes to auto-calculate carbon tons
+  const watchedArea = form.watch('project_area');
+  const watchedForestType = form.watch('forest_type');
+  
+  React.useEffect(() => {
+    if (watchedArea > 0 && watchedForestType) {
+      const calculatedCarbonTons = calculateCarbonCredits(watchedArea, watchedForestType);
+      form.setValue('carbon_tons', calculatedCarbonTons);
+    }
+  }, [watchedArea, watchedForestType, form]);
 
   const handleLocationSelect = (lat: number, lng: number) => {
     const coordString = `${lat.toFixed(6)},${lng.toFixed(6)}`;
@@ -374,7 +378,7 @@ const ProjectUploadEnhanced = () => {
                         Carbon & Financial Details
                       </CardTitle>
                       <CardDescription>
-                        Carbon sequestration and pricing information
+                        Carbon sequestration and pricing information (auto-calculated based on forest type)
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -388,12 +392,17 @@ const ProjectUploadEnhanced = () => {
                               <Input 
                                 type="number" 
                                 step="0.1"
-                                placeholder="5000"
+                                placeholder="Auto-calculated from forest type and area"
                                 {...field}
                                 onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                               />
                             </FormControl>
                             <FormMessage />
+                            {watchedArea > 0 && watchedForestType && (
+                              <p className="text-sm text-muted-foreground">
+                                Auto-calculated: {calculateCarbonCredits(watchedArea, watchedForestType).toLocaleString()} tCO₂
+                              </p>
+                            )}
                           </FormItem>
                         )}
                       />

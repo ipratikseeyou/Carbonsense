@@ -1,6 +1,6 @@
-
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { getBiomassPerHectare, getCalculationBreakdown, getForestBiomassData } from './forestBiomassData';
 
 // Define interfaces
 interface ProjectData {
@@ -77,6 +77,13 @@ export const generateProjectPDF = (project: ProjectData, analysisResult?: Analys
     return false;
   };
 
+  // Get forest-specific biomass data
+  const forestType = project.forest_type || 'Mixed Forest';
+  const biomassPerHa = getBiomassPerHectare(forestType);
+  const forestBiomassData = getForestBiomassData(forestType);
+  const calculationBreakdown = project.project_area ? 
+    getCalculationBreakdown(project.project_area, forestType) : null;
+
   // Header
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(24);
@@ -116,7 +123,7 @@ export const generateProjectPDF = (project: ProjectData, analysisResult?: Analys
   pdf.setFontSize(10);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(0, 0, 0);
-  const summaryText = `This report provides a comprehensive analysis of the ${project.name} carbon offset project located at ${project.coordinates}. The project demonstrates significant potential for carbon sequestration with an estimated ${Number(project.carbon_tons).toLocaleString()} tCO₂ capacity and a total project value of ${currencySymbol}${totalValue.toLocaleString()}.`;
+  const summaryText = `This report provides a comprehensive analysis of the ${project.name} carbon offset project located at ${project.coordinates}. The project features ${forestType} with an IPCC-based biomass value of ${biomassPerHa} t/ha, demonstrating significant potential for carbon sequestration with an estimated ${Number(project.carbon_tons).toLocaleString()} tCO₂ capacity and a total project value of ${currencySymbol}${totalValue.toLocaleString()}.`;
   
   const summaryLines = pdf.splitTextToSize(summaryText, pageWidth - 2 * margin);
   pdf.text(summaryLines, margin, yPosition);
@@ -133,11 +140,12 @@ export const generateProjectPDF = (project: ProjectData, analysisResult?: Analys
   const projectData = [
     ['Project Name', project.name],
     ['Location', project.coordinates],
+    ['Forest Type', forestType],
+    ['Biomass per Hectare', `${biomassPerHa} t/ha`],
+    ['Project Area', project.project_area ? `${project.project_area} hectares` : 'Not specified'],
     ['Carbon Capacity', `${Number(project.carbon_tons).toLocaleString()} tCO₂`],
     ['Price per Ton', `${currencySymbol}${Number(project.price_per_ton || 25).toFixed(2)}`],
     ['Total Value', `${currencySymbol}${totalValue.toLocaleString()}`],
-    ['Project Area', project.project_area ? `${project.project_area} hectares` : 'Not specified'],
-    ['Forest Type', project.forest_type || 'Not specified'],
     ['Developer', project.developer_name || 'Not specified'],
     ['Created Date', project.created_at ? new Date(project.created_at).toLocaleDateString() : 'Not specified']
   ];
@@ -164,6 +172,68 @@ export const generateProjectPDF = (project: ProjectData, analysisResult?: Analys
   });
 
   yPosition = (pdf as any).lastAutoTable.finalY + 15;
+
+  // Forest Biomass & Carbon Calculation Section
+  checkPageBreak(60);
+  pdf.setFontSize(14);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(...primaryColor);
+  pdf.text('FOREST BIOMASS & CARBON CALCULATION', margin, yPosition);
+  yPosition += 10;
+
+  if (calculationBreakdown) {
+    const biomassCalculationData = [
+      ['Forest Type', calculationBreakdown.forestType],
+      ['Biomass per Hectare', `${calculationBreakdown.biomassPerHa} t/ha`],
+      ['Project Area', `${calculationBreakdown.area} hectares`],
+      ['Forest Coverage', `${calculationBreakdown.forestCoverage}%`],
+      ['Buffer Percentage', `${calculationBreakdown.bufferPercentage}%`],
+      ['Calculation Formula', calculationBreakdown.formula],
+      ['Calculated Carbon Credits', `${calculationBreakdown.carbonCredits.toLocaleString()} tCO₂e`],
+      ['Data Source', calculationBreakdown.source],
+      ['Reference Year', calculationBreakdown.year ? calculationBreakdown.year.toString() : 'N/A']
+    ];
+
+    autoTable(pdf, {
+      startY: yPosition,
+      head: [['Parameter', 'Value']],
+      body: biomassCalculationData,
+      theme: 'grid',
+      headStyles: { 
+        fillColor: accentColor,
+        textColor: [255, 255, 255],
+        fontSize: 10,
+        fontStyle: 'bold'
+      },
+      bodyStyles: { 
+        fontSize: 9,
+        textColor: [0, 0, 0]
+      },
+      alternateRowStyles: { 
+        fillColor: lightGray 
+      },
+      margin: { left: margin, right: margin }
+    });
+
+    yPosition = (pdf as any).lastAutoTable.finalY + 15;
+
+    // Add calculation explanation
+    checkPageBreak(30);
+    pdf.setFontSize(12);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(...secondaryColor);
+    pdf.text('CALCULATION METHODOLOGY', margin, yPosition);
+    yPosition += 8;
+
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(0, 0, 0);
+    const methodologyText = `The carbon credit calculation follows IPCC guidelines using forest-specific biomass values. The formula accounts for project area, forest coverage percentage, biomass density, carbon fraction (0.47), CO₂ conversion factor (3.67), and applies a conservative buffer for uncertainty. This methodology ensures accurate and verifiable carbon credit quantification based on internationally recognized standards.`;
+    
+    const methodologyLines = pdf.splitTextToSize(methodologyText, pageWidth - 2 * margin);
+    pdf.text(methodologyLines, margin, yPosition);
+    yPosition += methodologyLines.length * 5 + 15;
+  }
 
   // Financial Analysis Section
   checkPageBreak(40);
