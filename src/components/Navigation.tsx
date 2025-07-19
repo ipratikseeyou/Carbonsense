@@ -76,7 +76,7 @@ const Navigation = () => {
               asChild
               variant="premium"
               size="default"
-              className="ml-4"
+              className="ml-4 text-black hover:text-black"
             >
               <Link to="/projects/upload">
                 <Plus className="h-4 w-4 mr-2" />
@@ -129,7 +129,7 @@ const Navigation = () => {
               asChild
               variant="premium"
               size="default"
-              className="w-full justify-start"
+              className="w-full justify-start text-black hover:text-black"
               onClick={() => setIsMobileMenuOpen(false)}
             >
               <Link to="/projects/upload">

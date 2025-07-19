@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -167,7 +166,7 @@ const ProjectDetails = () => {
         <div className="container mx-auto px-4 py-8">
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-satellite-blue mx-auto"></div>
-            <p className="text-muted-foreground mt-4">Loading project details...</p>
+            <p className="text-white mt-4">Loading project details...</p>
           </div>
         </div>
       </div>
@@ -188,7 +187,7 @@ const ProjectDetails = () => {
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex items-center gap-4 mb-6">
-          <Button variant="outline" size="sm" onClick={() => navigate('/projects')}>
+          <Button variant="outline" size="sm" onClick={() => navigate('/projects')} className="text-white border-white/20 hover:text-white hover:bg-white/10">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Projects
           </Button>
