@@ -49,20 +49,7 @@ export async function syncExistingProjectsToAWS(): Promise<SyncSummary> {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            ...project,
-            // Ensure all extended fields are included
-            project_area: project.project_area || 0,
-            forest_type: project.forest_type || '',
-            monitoring_period_start: project.monitoring_period_start || new Date().toISOString().split('T')[0],
-            monitoring_period_end: project.monitoring_period_end || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-            baseline_methodology: project.baseline_methodology || 'IPCC AR6 Tier 1',
-            verification_standard: project.verification_standard || 'VCS v4.0',
-            uncertainty_percentage: project.uncertainty_percentage || 5,
-            developer_name: project.developer_name || '',
-            developer_contact: project.developer_contact || '',
-            land_tenure: project.land_tenure || '',
-          }),
+          body: JSON.stringify(project),
         });
 
         if (!response.ok) {

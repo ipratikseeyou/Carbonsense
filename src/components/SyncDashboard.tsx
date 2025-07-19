@@ -7,11 +7,10 @@ import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { 
-  Sync, 
+  RefreshCw,
   CheckCircle, 
   XCircle, 
   AlertTriangle, 
-  RefreshCw,
   Database,
   Cloud,
   Activity
@@ -122,7 +121,7 @@ export default function SyncDashboard() {
                 </>
               ) : (
                 <>
-                  <Sync className="h-4 w-4 mr-2" />
+                  <RefreshCw className="h-4 w-4 mr-2" />
                   Sync to AWS
                 </>
               )}
