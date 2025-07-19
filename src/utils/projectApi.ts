@@ -2,6 +2,7 @@
 import { makeApiRequest, API_CONFIG } from '@/config/api';
 import { toast } from '@/hooks/use-toast';
 import { isValidUUID } from './validateUUID';
+import { syncSingleProject } from './syncProjects';
 
 export interface AnalysisResult {
   ndvi?: number;
@@ -64,6 +65,32 @@ const parseApiError = (error: unknown): string => {
   return 'An unexpected error occurred. Please check your connection and try again.';
 };
 
+const handleProjectNotFound = async (projectId: string): Promise<boolean> => {
+  console.log(`Project ${projectId} not found in AWS. Attempting to sync...`);
+  
+  toast({
+    title: 'Syncing Project',
+    description: 'Project not found in analysis backend. Attempting to sync...',
+  });
+  
+  const syncSuccess = await syncSingleProject(projectId);
+  
+  if (syncSuccess) {
+    toast({
+      title: 'Project Synced',
+      description: 'Project has been synchronized successfully. Please try again.',
+    });
+    return true;
+  } else {
+    toast({
+      title: 'Sync Failed',
+      description: 'Unable to sync project. Please contact support.',
+      variant: 'destructive',
+    });
+    return false;
+  }
+};
+
 export const analyzeProject = async (
   projectId: string | undefined,
   onStart: () => void,
@@ -82,6 +109,34 @@ export const analyzeProject = async (
     );
     
     if (!response.ok) {
+      // Handle 404 - project not found in AWS
+      if (response.status === 404) {
+        const synced = await handleProjectNotFound(validProjectId);
+        if (synced) {
+          // Retry after successful sync
+          const retryResponse = await makeApiRequest(
+            API_CONFIG.ENDPOINTS.ANALYZE_PROJECT(validProjectId),
+            { method: 'POST' }
+          );
+          
+          if (!retryResponse.ok) {
+            throw new Error(`Analysis failed after sync: ${retryResponse.status} ${retryResponse.statusText}`);
+          }
+          
+          const result: AnalysisResult = await retryResponse.json();
+          console.log('Analysis result (after sync):', result);
+          onComplete(result);
+          
+          toast({
+            title: 'Analysis Complete!',
+            description: 'Project analysis completed successfully after sync.',
+          });
+          return;
+        } else {
+          throw new Error('Project not found and sync failed. Please try uploading the project again.');
+        }
+      }
+      
       let errorData: ApiError;
       try {
         errorData = await response.json();
@@ -135,6 +190,42 @@ export const downloadProjectReport = async (
     );
     
     if (!response.ok) {
+      // Handle 404 - project not found in AWS
+      if (response.status === 404) {
+        const synced = await handleProjectNotFound(validProjectId);
+        if (synced) {
+          // Retry after successful sync
+          const retryResponse = await makeApiRequest(
+            API_CONFIG.ENDPOINTS.DOWNLOAD_REPORT(validProjectId)
+          );
+          
+          if (!retryResponse.ok) {
+            throw new Error(`Report generation failed after sync: ${retryResponse.status} ${retryResponse.statusText}`);
+          }
+          
+          // Handle PDF download for retry response
+          const blob = await retryResponse.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${projectName.replace(/\s+/g, '-').toLowerCase()}-report.pdf`;
+          document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+          
+          onComplete();
+          
+          toast({
+            title: 'Report Downloaded!',
+            description: 'Project report downloaded successfully after sync.',
+          });
+          return;
+        } else {
+          throw new Error('Project not found and sync failed. Please try uploading the project again.');
+        }
+      }
+      
       let errorData: ApiError;
       try {
         errorData = await response.json();

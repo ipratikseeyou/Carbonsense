@@ -9,13 +9,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Navigation from '@/components/Navigation';
 import MapLocationPicker from '@/components/MapLocationPicker';
 import CurrencySelector from '@/components/CurrencySelector';
 import { Upload, MapPin, Building, FileText, TreePine, Calendar, Shield } from 'lucide-react';
 import { apiEndpoints } from '@/config/api';
+import { supabase } from '@/integrations/supabase/client';
 
 const projectFormSchema = z.object({
   // Basic Information
@@ -115,32 +116,108 @@ const ProjectUploadEnhanced = () => {
   };
 
   const onSubmit = async (data: ProjectFormData) => {
+    let supabaseProject = null;
+    
     try {
-      // Using the API directly instead of Supabase
-      const response = await fetch(apiEndpoints.projects, {
+      console.log('Starting dual-write project creation...');
+      
+      // Step 1: Create project in Supabase first (canonical source of truth)
+      const { data: project, error: supabaseError } = await supabase
+        .from('projects')
+        .insert([
+          {
+            name: data.name,
+            coordinates: data.coordinates,
+            carbon_tons: data.carbon_tons,
+            price_per_ton: data.price_per_ton,
+            satellite_image_url: data.satellite_image_url || null,
+          }
+        ])
+        .select()
+        .single();
+
+      if (supabaseError) {
+        console.error('Supabase creation failed:', supabaseError);
+        throw new Error(`Failed to create project: ${supabaseError.message}`);
+      }
+
+      supabaseProject = project;
+      console.log('✅ Project created in Supabase:', project.id);
+
+      // Step 2: Sync to AWS API with same ID and extended data
+      const awsPayload = {
+        id: project.id,
+        name: data.name,
+        coordinates: data.coordinates,
+        carbon_tons: data.carbon_tons,
+        price_per_ton: data.price_per_ton,
+        currency: data.currency,
+        satellite_image_url: data.satellite_image_url || null,
+        project_area: data.project_area,
+        forest_type: data.forest_type,
+        monitoring_period_start: data.monitoring_period_start,
+        monitoring_period_end: data.monitoring_period_end,
+        last_verification_date: data.last_verification_date || null,
+        baseline_methodology: data.baseline_methodology,
+        verification_standard: data.verification_standard,
+        uncertainty_percentage: data.uncertainty_percentage,
+        developer_name: data.developer_name,
+        developer_contact: data.developer_contact,
+        land_tenure: data.land_tenure,
+        reference_documents: data.reference_documents || null,
+        created_at: project.created_at,
+      };
+
+      console.log('Syncing to AWS API...');
+      const awsResponse = await fetch(apiEndpoints.projects, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(awsPayload),
       });
 
-      if (!response.ok) throw new Error('Failed to create project');
+      if (!awsResponse.ok) {
+        const errorText = await awsResponse.text();
+        console.error('AWS sync failed:', errorText);
+        
+        // Rollback: Delete the Supabase record
+        console.log('Rolling back Supabase record...');
+        await supabase
+          .from('projects')
+          .delete()
+          .eq('id', project.id);
+        
+        throw new Error('Failed to sync project with analysis backend. Please try again.');
+      }
 
-      const createdProject = await response.json();
-      const projectId = createdProject.id;
+      console.log('✅ Project synced to AWS successfully');
       
       toast({
         title: 'Success!',
-        description: 'Project uploaded successfully.',
+        description: 'Project created and synchronized successfully.',
       });
 
-      navigate(`/projects/${projectId}`);
+      navigate(`/projects/${project.id}`);
     } catch (error) {
-      console.error('Error uploading project:', error);
+      console.error('Error in dual-write project creation:', error);
+      
+      // If we have a Supabase project but failed elsewhere, attempt cleanup
+      if (supabaseProject && error.message.includes('sync')) {
+        console.log('Attempting final cleanup...');
+        try {
+          await supabase
+            .from('projects')
+            .delete()
+            .eq('id', supabaseProject.id);
+        } catch (cleanupError) {
+          console.error('Cleanup failed:', cleanupError);
+        }
+      }
+      
       toast({
         title: 'Error',
-        description: 'Failed to upload project. Please try again.',
+        description: error.message || 'Failed to upload project. Please try again.',
         variant: 'destructive',
       });
     }
