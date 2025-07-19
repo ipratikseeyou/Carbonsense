@@ -10,7 +10,7 @@ import { toast } from '@/hooks/use-toast';
 import { isValidUUID } from '@/utils/validateUUID';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrencyConversion } from '@/hooks/useCurrencyConversion';
-import jsPDF from 'jspdf';
+import { generateProjectPDF } from '@/utils/generateProjectPDF';
 
 interface AnalysisResult {
   ndvi?: number;
@@ -62,150 +62,32 @@ const ProjectDetails = () => {
     setIsDownloading(true);
     
     try {
-      // Create new PDF document
-      const pdf = new jsPDF();
-      const pageWidth = pdf.internal.pageSize.width;
-      const margin = 20;
-      let yPosition = margin;
+      console.log('Generating professional PDF report for project:', project.id);
       
-      // Helper function to add text with word wrapping
-      const addText = (text: string, x: number, y: number, maxWidth: number, fontSize: number = 12) => {
-        pdf.setFontSize(fontSize);
-        const lines = pdf.splitTextToSize(text, maxWidth);
-        pdf.text(lines, x, y);
-        return y + (lines.length * fontSize * 0.5);
-      };
+      // Generate the professional PDF using the new utility
+      const pdf = generateProjectPDF(project, analysisResult || undefined);
       
-      // Header
-      pdf.setFontSize(20);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('Carbon Project Report', margin, yPosition);
-      yPosition += 15;
-      
-      // Project name
-      pdf.setFontSize(16);
-      pdf.setFont('helvetica', 'bold');
-      yPosition = addText(project.name, margin, yPosition, pageWidth - 2 * margin, 16);
-      yPosition += 10;
-      
-      // Location
-      pdf.setFontSize(12);
-      pdf.setFont('helvetica', 'normal');
-      yPosition = addText(`Location: ${project.coordinates}`, margin, yPosition, pageWidth - 2 * margin);
-      yPosition += 10;
-      
-      // Project Summary Section
-      pdf.setFontSize(14);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('Project Summary', margin, yPosition);
-      yPosition += 10;
-      
-      pdf.setFontSize(10);
-      pdf.setFont('helvetica', 'normal');
-      
-      const currencySymbol = getSymbol('USD');
-      const totalValue = (project.carbon_tons || 0) * (project.price_per_ton || 25);
-      
-      const summaryData = [
-        `Carbon Sequestration: ${Number(project.carbon_tons).toLocaleString()} tCO₂`,
-        `Price per Ton: ${currencySymbol}${Number(project.price_per_ton || 25).toFixed(2)}`,
-        `Total Project Value: ${currencySymbol}${totalValue.toLocaleString()}`,
-        `Created: ${new Date(project.created_at || '').toLocaleDateString()}`,
-        `Status: Active`
-      ];
-      
-      summaryData.forEach(item => {
-        yPosition = addText(item, margin, yPosition, pageWidth - 2 * margin, 10);
-        yPosition += 5;
-      });
-      
-      yPosition += 10;
-      
-      // Analysis Results Section (if available)
-      if (analysisResult) {
-        pdf.setFontSize(14);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text('Analysis Results', margin, yPosition);
-        yPosition += 10;
-        
-        pdf.setFontSize(10);
-        pdf.setFont('helvetica', 'normal');
-        
-        if (analysisResult.ndvi) {
-          yPosition = addText(`NDVI Score: ${Number(analysisResult.ndvi).toFixed(3)}`, margin, yPosition, pageWidth - 2 * margin, 10);
-          yPosition += 5;
-        }
-        
-        if (analysisResult.forest_cover) {
-          yPosition = addText(`Forest Cover: ${Number(analysisResult.forest_cover).toFixed(1)}%`, margin, yPosition, pageWidth - 2 * margin, 10);
-          yPosition += 5;
-        }
-        
-        if (analysisResult.carbon_estimate) {
-          yPosition = addText(`Carbon Estimate: ${Number(analysisResult.carbon_estimate).toLocaleString()} tCO₂`, margin, yPosition, pageWidth - 2 * margin, 10);
-          yPosition += 5;
-        }
-        
-        if (analysisResult.recommendations) {
-          yPosition += 5;
-          pdf.setFont('helvetica', 'bold');
-          yPosition = addText('Recommendations:', margin, yPosition, pageWidth - 2 * margin, 10);
-          yPosition += 3;
-          pdf.setFont('helvetica', 'normal');
-          yPosition = addText(analysisResult.recommendations, margin, yPosition, pageWidth - 2 * margin, 10);
-        }
-        
-        yPosition += 10;
-      }
-      
-      // Verification Details Section
-      pdf.setFontSize(14);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('Verification & Standards', margin, yPosition);
-      yPosition += 10;
-      
-      pdf.setFontSize(10);
-      pdf.setFont('helvetica', 'normal');
-      
-      const verificationData = [
-        'Verification Standard: VCS v4.0',
-        'Methodology: VM0015',
-        'Currency: USD'
-      ];
-      
-      verificationData.forEach(item => {
-        yPosition = addText(item, margin, yPosition, pageWidth - 2 * margin, 10);
-        yPosition += 5;
-      });
-      
-      // Footer
-      const footerY = pdf.internal.pageSize.height - 20;
-      pdf.setFontSize(8);
-      pdf.setFont('helvetica', 'italic');
-      pdf.text(`Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}`, margin, footerY);
-      pdf.text('CarbonTrack Platform - Satellite-Powered Carbon Monitoring', pageWidth - margin - 80, footerY);
-      
-      // Generate PDF blob and download
+      // Create blob and download
       const pdfBlob = pdf.output('blob');
       const url = window.URL.createObjectURL(pdfBlob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${project.name.replace(/\s+/g, '-').toLowerCase()}-report.pdf`;
+      a.download = `${project.name.replace(/\s+/g, '-').toLowerCase()}-professional-report.pdf`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
       
       toast({
-        title: 'PDF Report Downloaded!',
-        description: 'Project report has been downloaded successfully as PDF.',
+        title: 'Professional PDF Report Downloaded!',
+        description: 'Comprehensive project analysis report has been generated and downloaded.',
       });
       
     } catch (error) {
-      console.error('Error generating PDF:', error);
+      console.error('Error generating professional PDF:', error);
       toast({
         title: 'Download Failed',
-        description: 'Could not generate PDF report. Please try again.',
+        description: 'Could not generate professional PDF report. Please try again.',
         variant: 'destructive',
       });
     } finally {
@@ -554,12 +436,12 @@ const ProjectDetails = () => {
                   {isDownloading ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Generating PDF...
+                      Generating Professional PDF...
                     </>
                   ) : (
                     <>
                       <Download className="h-4 w-4 mr-2" />
-                      Download PDF Report
+                      Download Professional Report
                     </>
                   )}
                 </Button>
