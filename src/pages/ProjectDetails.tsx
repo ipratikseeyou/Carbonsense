@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -6,37 +7,18 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Navigation from '@/components/Navigation';
-import { ArrowLeft, MapPin, Calendar, DollarSign, Leaf, Satellite, TrendingUp, BarChart3, Download, Loader2 } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
-import { isValidUUID } from '@/utils/validateUUID';
-import { analyzeProject, downloadProjectReport, type AnalysisResult } from '@/utils/projectApi';
+import { ArrowLeft, MapPin, Calendar, DollarSign, Leaf, Satellite, TrendingUp } from 'lucide-react';
+import { toast } from '@/components/ui/use-toast';
+import ProjectAnalyzer from '@/components/ProjectAnalyzer';
 
 const ProjectDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
-
-  // Early validation of project ID
-  useEffect(() => {
-    if (!id || !isValidUUID(id)) {
-      toast({
-        title: 'Invalid Project ID',
-        description: 'The project ID is not valid. Please check the URL or select a valid project.',
-        variant: 'destructive',
-      });
-      // Navigate back to projects list after a short delay
-      setTimeout(() => navigate('/projects'), 3000);
-    }
-  }, [id, navigate]);
 
   const { data: project, isLoading, error } = useQuery({
     queryKey: ['project', id],
     queryFn: async () => {
-      if (!id || !isValidUUID(id)) {
-        throw new Error('Invalid project ID');
-      }
+      if (!id) throw new Error('No project ID provided');
       
       const { data, error } = await supabase
         .from('projects')
@@ -47,13 +29,13 @@ const ProjectDetails = () => {
       if (error) throw error;
       return data;
     },
-    enabled: !!id && isValidUUID(id),
+    enabled: !!id,
   });
 
   const { data: carbonData } = useQuery({
     queryKey: ['carbon-data', id],
     queryFn: async () => {
-      if (!id || !isValidUUID(id)) return [];
+      if (!id) return [];
       
       const { data, error } = await supabase
         .from('carbon_data')
@@ -64,38 +46,8 @@ const ProjectDetails = () => {
       if (error) throw error;
       return data;
     },
-    enabled: !!id && isValidUUID(id),
+    enabled: !!id,
   });
-
-  const handleAnalyzeProject = () => {
-    analyzeProject(
-      id,
-      () => setIsAnalyzing(true),
-      (result) => {
-        setAnalysisResult(result);
-        setIsAnalyzing(false);
-      },
-      (error) => {
-        setIsAnalyzing(false);
-        console.error('Analysis error:', error);
-      }
-    );
-  };
-
-  const handleDownloadReport = () => {
-    if (!project) return;
-    
-    downloadProjectReport(
-      id,
-      project.name,
-      () => setIsDownloading(true),
-      () => setIsDownloading(false),
-      (error) => {
-        setIsDownloading(false);
-        console.error('Download error:', error);
-      }
-    );
-  };
 
   const handleDelete = async () => {
     if (!project || !window.confirm('Are you sure you want to delete this project?')) return;
@@ -124,24 +76,6 @@ const ProjectDetails = () => {
     }
   };
 
-  // Early return for invalid UUID
-  if (!id || !isValidUUID(id)) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-satellite-blue/5">
-        <Navigation />
-        <div className="container mx-auto px-4 py-8">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-destructive">Invalid Project ID</h1>
-            <p className="text-muted-foreground mt-2">The project ID format is not valid. Please check the URL.</p>
-            <Button asChild className="mt-4">
-              <Link to="/projects">Back to Projects</Link>
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-satellite-blue/5">
@@ -166,7 +100,7 @@ const ProjectDetails = () => {
         <div className="container mx-auto px-4 py-8">
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-satellite-blue mx-auto"></div>
-            <p className="text-white mt-4">Loading project details...</p>
+            <p className="text-muted-foreground mt-4">Loading project details...</p>
           </div>
         </div>
       </div>
@@ -187,7 +121,7 @@ const ProjectDetails = () => {
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex items-center gap-4 mb-6">
-          <Button variant="outline" size="sm" onClick={() => navigate('/projects')} className="text-white border-white/20 hover:text-white hover:bg-white/10">
+          <Button variant="outline" size="sm" onClick={() => navigate('/projects')}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Projects
           </Button>
@@ -253,49 +187,6 @@ const ProjectDetails = () => {
                 </div>
               </CardContent>
             </Card>
-
-            {/* Analysis Results */}
-            {analysisResult && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5" />
-                    Analysis Results
-                  </CardTitle>
-                  <CardDescription>
-                    Latest AI-powered analysis of this project
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      {analysisResult.ndvi && (
-                        <div className="p-3 bg-green-50 rounded-lg">
-                          <div className="text-sm text-muted-foreground">NDVI Score</div>
-                          <div className="text-2xl font-bold text-green-600">
-                            {Number(analysisResult.ndvi).toFixed(3)}
-                          </div>
-                        </div>
-                      )}
-                      {analysisResult.forest_cover && (
-                        <div className="p-3 bg-blue-50 rounded-lg">
-                          <div className="text-sm text-muted-foreground">Forest Cover</div>
-                          <div className="text-2xl font-bold text-blue-600">
-                            {Number(analysisResult.forest_cover).toFixed(1)}%
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    {analysisResult.recommendations && (
-                      <div className="p-3 bg-muted/50 rounded-lg">
-                        <div className="text-sm font-medium mb-2">Recommendations</div>
-                        <p className="text-sm text-muted-foreground">{analysisResult.recommendations}</p>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
 
             {/* Carbon Measurements */}
             {carbonData && carbonData.length > 0 && (
@@ -364,44 +255,6 @@ const ProjectDetails = () => {
                 <CardTitle>Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button 
-                  onClick={handleAnalyzeProject}
-                  disabled={isAnalyzing}
-                  variant="satellite"
-                  className="w-full"
-                >
-                  {isAnalyzing ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Analyzing...
-                    </>
-                  ) : (
-                    <>
-                      <BarChart3 className="h-4 w-4 mr-2" />
-                      Analyze Project
-                    </>
-                  )}
-                </Button>
-
-                <Button 
-                  onClick={handleDownloadReport}
-                  disabled={isDownloading}
-                  variant="earth"
-                  className="w-full"
-                >
-                  {isDownloading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <Download className="h-4 w-4 mr-2" />
-                      Download Report
-                    </>
-                  )}
-                </Button>
-
                 <Button asChild variant="outline" className="w-full">
                   <Link to={`/projects/${project.id}/edit`}>
                     Edit Project
@@ -417,6 +270,11 @@ const ProjectDetails = () => {
                 </Button>
               </CardContent>
             </Card>
+
+            <ProjectAnalyzer 
+              projectId={project.id} 
+              projectName={project.name} 
+            />
           </div>
         </div>
       </div>

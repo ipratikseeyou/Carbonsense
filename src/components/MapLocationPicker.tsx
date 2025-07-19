@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Input } from '@/components/ui/input';
@@ -30,12 +30,6 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
   const [isMapReady, setIsMapReady] = useState(false);
   const [isLoadingToken, setIsLoadingToken] = useState(true);
   const [tokenError, setTokenError] = useState<string>('');
-
-  // Store the latest onLocationSelect in a ref to avoid re-initializing map
-  const onLocationSelectRef = useRef(onLocationSelect);
-  useEffect(() => {
-    onLocationSelectRef.current = onLocationSelect;
-  }, [onLocationSelect]);
 
   // Fetch Mapbox token from edge function on component mount
   useEffect(() => {
@@ -83,7 +77,7 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
       
       // Update coordinates display
       setCoordinates(`${lat.toFixed(6)},${lng.toFixed(6)}`);
-      onLocationSelectRef.current(lat, lng);
+      onLocationSelect(lat, lng);
     }
   };
 
@@ -111,36 +105,18 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
         .setLngLat([initialLocation.lng, initialLocation.lat])
         .addTo(map.current);
 
-      // Handle marker drag start
-      marker.current.on('dragstart', () => {
-        if (map.current) {
-          map.current.dragPan.disable();
-        }
-      });
-
-      // Handle marker dragging
-      marker.current.on('drag', () => {
+      // Handle marker drag with smooth animation
+      marker.current.on('dragend', () => {
         if (marker.current) {
           const lngLat = marker.current.getLngLat();
-          setCoordinates(`${lngLat.lat.toFixed(6)},${lngLat.lng.toFixed(6)}`);
-        }
-      });
-
-      // Handle marker drag end
-      marker.current.on('dragend', () => {
-        if (marker.current && map.current) {
-          map.current.dragPan.enable();
-          const lngLat = marker.current.getLngLat();
-          // Update the coordinates and notify parent
-          setCoordinates(`${lngLat.lat.toFixed(6)},${lngLat.lng.toFixed(6)}`);
-          onLocationSelectRef.current(lngLat.lat, lngLat.lng);
-          
-          // Optional: Center map on new marker position
-          map.current.easeTo({
+          // Smooth camera follow during drag
+          map.current?.easeTo({
             center: [lngLat.lng, lngLat.lat],
             duration: 300,
             easing: (t) => t * (2 - t)
           });
+          setCoordinates(`${lngLat.lat.toFixed(6)},${lngLat.lng.toFixed(6)}`);
+          onLocationSelect(lngLat.lat, lngLat.lng);
         }
       });
 
@@ -160,7 +136,7 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
     return () => {
       map.current?.remove();
     };
-  }, [mapboxToken]); // Only re-initialize when token changes
+  }, [mapboxToken, initialLocation, onLocationSelect]);
 
   const handleManualCoordsSubmit = () => {
     const coords = coordinates.split(',');
@@ -179,7 +155,7 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
             easing: (t) => t * (2 - t)
           });
         }
-        onLocationSelectRef.current(lat, lng);
+        onLocationSelect(lat, lng);
       }
     }
   };
