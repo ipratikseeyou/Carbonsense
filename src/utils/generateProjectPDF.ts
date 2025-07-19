@@ -60,10 +60,12 @@ export const generateProjectPDF = (project: ProjectData, analysisResult?: Analys
   let yPosition = margin;
 
   // Colors (using RGB values for jsPDF compatibility)
-  const primaryColor = [41, 128, 185]; // Blue
-  const secondaryColor = [52, 73, 94]; // Dark gray
-  const accentColor = [39, 174, 96]; // Green
-  const lightGray = [236, 240, 241];
+  const primaryColor: [number, number, number] = [41, 128, 185]; // Blue
+  const secondaryColor: [number, number, number] = [52, 73, 94]; // Dark gray
+  const accentColor: [number, number, number] = [39, 174, 96]; // Green
+  const lightGray: [number, number, number] = [236, 240, 241];
+  const orangeColor: [number, number, number] = [230, 126, 34]; // Orange
+  const redColor: [number, number, number] = [231, 76, 60]; // Red
 
   // Helper function to check if we need a new page
   const checkPageBreak = (requiredSpace: number): boolean => {
@@ -286,7 +288,7 @@ export const generateProjectPDF = (project: ProjectData, analysisResult?: Analys
         body: analysisData,
         theme: 'grid',
         headStyles: { 
-          fillColor: [230, 126, 34], // Orange
+          fillColor: orangeColor,
           textColor: [255, 255, 255],
           fontSize: 10,
           fontStyle: 'bold'
@@ -348,7 +350,7 @@ export const generateProjectPDF = (project: ProjectData, analysisResult?: Analys
     body: riskData,
     theme: 'grid',
     headStyles: { 
-      fillColor: [231, 76, 60], // Red
+      fillColor: redColor,
       textColor: [255, 255, 255],
       fontSize: 10,
       fontStyle: 'bold'
