@@ -602,6 +602,13 @@ const ProjectDetails = () => {
                 </Button>
 
                 <Button asChild variant="outline" className="w-full">
+                  <Link to={`/projects/${project.id}/visualization`}>
+                    <BarChart3 className="h-4 w-4 mr-2" />
+                    View Satellite Data
+                  </Link>
+                </Button>
+
+                <Button asChild variant="outline" className="w-full">
                   <Link to={`/projects/${project.id}/edit`}>
                     <Edit className="h-4 w-4 mr-2" />
                     Edit Project

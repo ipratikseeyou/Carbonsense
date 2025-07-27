@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import ProjectDashboard from "./pages/ProjectDashboard";
 import ProjectUploadEnhanced from '@/pages/ProjectUploadEnhanced';
 import ProjectDetails from "./pages/ProjectDetails";
+import SatelliteVisualization from "./pages/SatelliteVisualization";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,6 +24,7 @@ const App = () => (
           <Route path="/projects" element={<ProjectDashboard />} />
           <Route path="/projects/upload" element={<ProjectUploadEnhanced />} />
           <Route path="/projects/:id" element={<ProjectDetails />} />
+          <Route path="/projects/:id/visualization" element={<SatelliteVisualization />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
