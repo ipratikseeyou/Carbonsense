@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useCurrencyConversion } from '@/hooks/useCurrencyConversion';
 import { generateProjectPDF } from '@/utils/generateProjectPDF';
 import { getBiomassPerHectare, getCalculationBreakdown, getForestBiomassData } from '@/utils/forestBiomassData';
+import { NDVIIndicator } from '@/components/NDVIIndicator';
 
 interface AnalysisResult {
   ndvi?: number;
@@ -97,26 +98,54 @@ const ProjectDetails = () => {
   };
 
   const handleAnalyzeProject = async () => {
+    if (!project) return;
+    
     setIsAnalyzing(true);
     
-    // Simulate analysis - in a real app, this would call your analysis API
-    setTimeout(() => {
+    try {
+      // Parse coordinates from project
+      const { parseCoordinates, fetchSatelliteData } = await import('@/services/satelliteService');
+      const { lat, lon } = parseCoordinates(project.coordinates);
+      
+      // Fetch real satellite data
+      const satelliteData = await fetchSatelliteData(lat, lon);
+      
+      const result: AnalysisResult = {
+        ndvi: satelliteData.ndvi,
+        forest_cover: satelliteData.forest_cover_percentage,
+        carbon_estimate: satelliteData.carbon_stock,
+        recommendations: `Based on satellite analysis: NDVI is ${satelliteData.ndvi.toFixed(2)}, indicating ${satelliteData.ndvi > 0.6 ? 'excellent' : satelliteData.ndvi > 0.3 ? 'moderate' : 'poor'} vegetation health. Carbon stock estimated at ${satelliteData.carbon_stock.toFixed(1)} tons/ha.`,
+        confidence_score: satelliteData.confidence_score
+      };
+      
+      setAnalysisResult(result);
+      
+      toast({
+        title: 'Satellite Analysis Complete!',
+        description: `Real-time analysis completed with ${Math.round(satelliteData.confidence_score * 100)}% confidence.`,
+      });
+    } catch (error) {
+      console.error('Satellite analysis failed:', error);
+      
+      // Fallback to mock data if satellite API fails
       const mockResult: AnalysisResult = {
         ndvi: 0.75 + Math.random() * 0.2,
         forest_cover: 80 + Math.random() * 15,
         carbon_estimate: project ? Number(project.carbon_tons) * (0.9 + Math.random() * 0.2) : 0,
-        recommendations: "Forest coverage is excellent. Consider expanding monitoring to adjacent areas.",
-        confidence_score: 0.85 + Math.random() * 0.1
+        recommendations: "Unable to fetch satellite data. Showing estimated values based on project information.",
+        confidence_score: 0.65
       };
       
       setAnalysisResult(mockResult);
-      setIsAnalyzing(false);
       
       toast({
-        title: 'Analysis Complete!',
-        description: 'Project analysis has been completed successfully.',
+        title: 'Analysis Complete (Estimated)',
+        description: 'Satellite data unavailable. Showing estimated analysis.',
+        variant: 'destructive',
       });
-    }, 2000);
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   const handleDelete = async () => {
@@ -394,44 +423,97 @@ const ProjectDetails = () => {
               </CardContent>
             </Card>
 
+            {/* Satellite Analysis Results */}
             {analysisResult && (
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-foreground">
+                      <BarChart3 className="h-5 w-5" />
+                      Satellite Analysis Results
+                    </CardTitle>
+                    <CardDescription>
+                      Real-time satellite data and AI-powered analysis
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* NDVI Indicator */}
+                      {analysisResult.ndvi && (
+                        <NDVIIndicator
+                          ndvi={analysisResult.ndvi}
+                          confidence={analysisResult.confidence_score}
+                          forestCover={analysisResult.forest_cover}
+                          carbonEstimate={analysisResult.carbon_estimate}
+                        />
+                      )}
+                      
+                      {/* Additional Analysis Data */}
+                      <div className="space-y-4">
+                        {analysisResult.forest_cover && (
+                          <Card className="bg-blue-50 border-blue-200">
+                            <CardContent className="p-4">
+                              <div className="text-center">
+                                <div className="text-sm text-muted-foreground mb-1">Forest Coverage</div>
+                                <div className="text-2xl font-bold text-blue-600">
+                                  {Number(analysisResult.forest_cover).toFixed(1)}%
+                                </div>
+                                <div className="w-full bg-blue-200 rounded-full h-2 mt-2">
+                                  <div 
+                                    className="bg-blue-600 h-2 rounded-full transition-all duration-500"
+                                    style={{ width: `${Math.min(analysisResult.forest_cover, 100)}%` }}
+                                  />
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        )}
+                        
+                        {analysisResult.carbon_estimate && (
+                          <Card className="bg-green-50 border-green-200">
+                            <CardContent className="p-4">
+                              <div className="text-center">
+                                <div className="text-sm text-muted-foreground mb-1">Carbon Stock Estimate</div>
+                                <div className="text-2xl font-bold text-green-600">
+                                  {Number(analysisResult.carbon_estimate).toFixed(1)}
+                                </div>
+                                <div className="text-xs text-muted-foreground">tons CO₂e/hectare</div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {analysisResult.recommendations && (
+                      <div className="mt-6 p-4 bg-muted/50 rounded-lg">
+                        <div className="text-sm font-medium mb-2 text-foreground">
+                          📡 Satellite Analysis Recommendations
+                        </div>
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          {analysisResult.recommendations}
+                        </p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+            
+            {/* Loading state for analysis */}
+            {isAnalyzing && !analysisResult && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-foreground">
                     <BarChart3 className="h-5 w-5" />
-                    Analysis Results
+                    Analyzing Satellite Data...
                   </CardTitle>
                   <CardDescription>
-                    Latest AI-powered analysis of this project
+                    Fetching real-time satellite imagery and performing AI analysis
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      {analysisResult.ndvi && (
-                        <div className="p-3 bg-green-50 rounded-lg">
-                          <div className="text-sm text-muted-foreground">NDVI Score</div>
-                          <div className="text-2xl font-bold text-green-600">
-                            {Number(analysisResult.ndvi).toFixed(3)}
-                          </div>
-                        </div>
-                      )}
-                      {analysisResult.forest_cover && (
-                        <div className="p-3 bg-blue-50 rounded-lg">
-                          <div className="text-sm text-muted-foreground">Forest Cover</div>
-                          <div className="text-2xl font-bold text-blue-600">
-                            {Number(analysisResult.forest_cover).toFixed(1)}%
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    {analysisResult.recommendations && (
-                      <div className="p-3 bg-muted/50 rounded-lg">
-                        <div className="text-sm font-medium mb-2 text-foreground">Recommendations</div>
-                        <p className="text-sm text-muted-foreground">{analysisResult.recommendations}</p>
-                      </div>
-                    )}
-                  </div>
+                  <NDVIIndicator ndvi={0} isLoading={true} />
                 </CardContent>
               </Card>
             )}

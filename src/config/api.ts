@@ -3,10 +3,14 @@ export const API_CONFIG = {
   // Backend URL - uses environment variable or AWS Lambda as fallback
   BACKEND_URL: import.meta.env.VITE_API_URL || 'https://kvu6v1r4mk.execute-api.us-east-1.amazonaws.com/Prod',
   
+  // Satellite API Base URL
+  SATELLITE_API_URL: 'https://9xi0ugbkzh.execute-api.us-east-1.amazonaws.com/Prod',
+  
   // API Endpoints
   ENDPOINTS: {
     ANALYZE_PROJECT: (projectId: string) => `/projects/${projectId}/analyze`,
     DOWNLOAD_REPORT: (projectId: string) => `/projects/${projectId}/report`,
+    SATELLITE_DATA: (lat: number, lon: number) => `/satellite/test-location?lat=${lat}&lon=${lon}`,
   },
   
   // Request configuration
@@ -60,6 +64,9 @@ export const apiEndpoints = {
   
   // Currency endpoint
   currencies: `${baseUrl}/currencies`,
+  
+  // Satellite endpoint
+  satelliteData: (lat: number, lon: number) => `${API_CONFIG.SATELLITE_API_URL}/satellite/test-location?lat=${lat}&lon=${lon}`,
   
   // Health check
   health: `${baseUrl}/`,
