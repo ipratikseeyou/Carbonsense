@@ -42,7 +42,7 @@ export const fetchSatelliteData = async (lat: number, lon: number): Promise<Sate
   const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.REQUEST_TIMEOUT);
 
   try {
-    const url = `${API_CONFIG.SATELLITE_API_URL}/satellite/test-location?lat=${lat}&lon=${lon}`;
+    const url = `${API_CONFIG.BASE_URL}/satellite/test-location?lat=${lat}&lon=${lon}`;
     console.log(`Fetching satellite data from: ${url}`);
 
     const response = await fetch(url, {

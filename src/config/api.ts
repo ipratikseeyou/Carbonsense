@@ -1,16 +1,18 @@
 // API Configuration
 export const API_CONFIG = {
-  // Backend URL - uses environment variable or AWS Lambda as fallback
-  BACKEND_URL: import.meta.env.VITE_API_URL || 'https://kvu6v1r4mk.execute-api.us-east-1.amazonaws.com/Prod',
-  
-  // Satellite API Base URL
-  SATELLITE_API_URL: 'https://9xi0ugbkzh.execute-api.us-east-1.amazonaws.com/Prod',
+  // Backend URL - consolidated to working endpoint
+  BASE_URL: 'https://9xi0ugbkzh.execute-api.us-east-1.amazonaws.com/Prod',
   
   // API Endpoints
   ENDPOINTS: {
+    PROJECTS: '/projects',
+    PROJECT_DETAIL: (id: string) => `/projects/${id}`,
     ANALYZE_PROJECT: (projectId: string) => `/projects/${projectId}/analyze`,
     DOWNLOAD_REPORT: (projectId: string) => `/projects/${projectId}/report`,
+    PROJECT_NDVI: (projectId: string) => `/projects/${projectId}/ndvi`,
     SATELLITE_DATA: (lat: number, lon: number) => `/satellite/test-location?lat=${lat}&lon=${lon}`,
+    CURRENCIES: '/currencies',
+    API_STATUS: '/api-status'
   },
   
   // Request configuration
@@ -30,10 +32,10 @@ export const makeApiRequest = async (
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.REQUEST_TIMEOUT);
   
-  console.log(`Making API request to: ${API_CONFIG.BACKEND_URL}${endpoint}`);
+  console.log(`Making API request to: ${API_CONFIG.BASE_URL}${endpoint}`);
   
   try {
-    const response = await fetch(`${API_CONFIG.BACKEND_URL}${endpoint}`, {
+    const response = await fetch(`${API_CONFIG.BASE_URL}${endpoint}`, {
       ...options,
       headers: {
         ...API_CONFIG.DEFAULT_HEADERS,
@@ -53,7 +55,7 @@ export const makeApiRequest = async (
 };
 
 // Legacy API endpoints for backward compatibility
-const baseUrl = API_CONFIG.BACKEND_URL.endsWith('/') ? API_CONFIG.BACKEND_URL.slice(0, -1) : API_CONFIG.BACKEND_URL;
+const baseUrl = API_CONFIG.BASE_URL.endsWith('/') ? API_CONFIG.BASE_URL.slice(0, -1) : API_CONFIG.BASE_URL;
 
 export const apiEndpoints = {
   // Projects endpoints
@@ -66,7 +68,7 @@ export const apiEndpoints = {
   currencies: `${baseUrl}/currencies`,
   
   // Satellite endpoint
-  satelliteData: (lat: number, lon: number) => `${API_CONFIG.SATELLITE_API_URL}/satellite/test-location?lat=${lat}&lon=${lon}`,
+  satelliteData: (lat: number, lon: number) => `${baseUrl}/satellite/test-location?lat=${lat}&lon=${lon}`,
   
   // Health check
   health: `${baseUrl}/`,

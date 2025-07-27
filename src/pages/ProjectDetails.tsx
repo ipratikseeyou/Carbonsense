@@ -13,6 +13,7 @@ import { useCurrencyConversion } from '@/hooks/useCurrencyConversion';
 import { generateProjectPDF } from '@/utils/generateProjectPDF';
 import { getBiomassPerHectare, getCalculationBreakdown, getForestBiomassData } from '@/utils/forestBiomassData';
 import { NDVIIndicator } from '@/components/NDVIIndicator';
+import { SatelliteAnalysis } from '@/components/SatelliteAnalysis';
 
 interface AnalysisResult {
   ndvi?: number;
@@ -631,6 +632,17 @@ const ProjectDetails = () => {
               </CardContent>
             </Card>
           </div>
+        </div>
+
+        {/* Satellite Analysis Section */}
+        <div className="mt-8">
+          <SatelliteAnalysis 
+            projectId={project.id}
+            coordinates={{
+              lat: parseFloat(project.coordinates?.split(',')[0] || '0'),
+              lng: parseFloat(project.coordinates?.split(',')[1] || '0')
+            }}
+          />
         </div>
       </div>
     </div>
