@@ -229,7 +229,7 @@ const ProjectDetails = () => {
 
   if (!project) return null;
 
-  const currency = 'USD';
+  const currency = (project as any).currency || 'USD';
   const currencySymbol = getSymbol(currency);
   const totalValue = (project.carbon_tons || 0) * (project.price_per_ton || 25);
 
@@ -335,8 +335,8 @@ const ProjectDetails = () => {
                 <CardDescription>IPCC-based forest biomass data and carbon calculations</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="space-y-3">
                     <div>
                       <div className="text-sm text-muted-foreground mb-1">Forest Type</div>
                       <div className="text-lg font-semibold text-foreground">{forestType}</div>
@@ -345,34 +345,42 @@ const ProjectDetails = () => {
                     <div>
                       <div className="text-sm text-muted-foreground mb-1">Biomass per Hectare</div>
                       <div className="text-lg font-semibold text-green-600">{biomassPerHa} t/ha</div>
-                      {forestBiomassData && (
-                        <div className="text-xs text-muted-foreground">
-                          Source: {forestBiomassData.source} ({forestBiomassData.year})
-                        </div>
-                      )}
                     </div>
                   </div>
 
-                  {calculationBreakdown && (
-                    <div className="space-y-4">
-                      <div>
-                        <div className="text-sm text-muted-foreground mb-1">Calculation Formula</div>
-                        <div className="text-xs font-mono bg-muted p-2 rounded">
-                          {calculationBreakdown.formula}
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <div className="text-sm text-muted-foreground mb-1">Calculated Carbon Credits</div>
-                        <div className="text-lg font-semibold text-blue-600">
-                          {calculationBreakdown.carbonCredits.toLocaleString()} tCO₂e
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          Based on {calculationBreakdown.area} ha × {calculationBreakdown.forestCoverage}% coverage
-                        </div>
+                  <div className="space-y-3">
+                    <div>
+                      <div className="text-sm text-muted-foreground mb-1">Carbon Credits</div>
+                      <div className="text-xl font-bold text-blue-600">
+                        {calculationBreakdown ? calculationBreakdown.carbonCredits.toLocaleString() : Number(project.carbon_tons).toLocaleString()} tCO₂e
                       </div>
                     </div>
-                  )}
+                    
+                    <div>
+                      <div className="text-sm text-muted-foreground mb-1">Project Area</div>
+                      <div className="text-lg font-semibold text-foreground">
+                        {calculationBreakdown ? calculationBreakdown.area : (project as any).project_area || '100'} hectares
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div>
+                      <div className="text-sm text-muted-foreground mb-1">Data Source</div>
+                      {forestBiomassData && (
+                        <div className="text-sm text-foreground">
+                          {forestBiomassData.source} ({forestBiomassData.year})
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <div className="text-sm text-muted-foreground mb-1">Forest Coverage</div>
+                      <div className="text-lg font-semibold text-green-600">
+                        {calculationBreakdown ? calculationBreakdown.forestCoverage : '85'}%
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -523,106 +531,103 @@ const ProjectDetails = () => {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="text-foreground">Project Summary</CardTitle>
+                <CardTitle className="text-lg text-foreground">Project Summary</CardTitle>
+                <CardDescription>Financial overview and project metrics</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <div className="text-sm text-muted-foreground">Total Value</div>
-                  <div className="text-xl font-bold text-foreground">
+              <CardContent className="space-y-6">
+                <div className="text-center p-6 bg-gradient-to-br from-green-50 to-blue-50 rounded-lg border">
+                  <div className="text-3xl font-bold text-green-600 mb-2">
                     {currencySymbol}{totalValue.toLocaleString()}
                   </div>
+                  <div className="text-sm text-muted-foreground">Total Project Value</div>
+                  <div className="text-xs text-muted-foreground mt-1">{currency}</div>
                 </div>
 
-                <div>
-                  <div className="text-sm text-muted-foreground">Status</div>
-                  <div className="text-xl font-bold text-green-600">
-                    Active
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center p-4 bg-muted/50 rounded-lg">
+                    <div className="text-xl font-bold text-foreground">{currencySymbol}{Number(project.price_per_ton || 25).toFixed(2)}</div>
+                    <div className="text-sm text-muted-foreground">Per Ton</div>
+                    <div className="text-xs text-muted-foreground">{currency}</div>
+                  </div>
+                  <div className="text-center p-4 bg-muted/50 rounded-lg">
+                    <div className="text-xl font-bold text-foreground">{Number(project.carbon_tons).toLocaleString()}</div>
+                    <div className="text-sm text-muted-foreground">Carbon Tons</div>
                   </div>
                 </div>
 
-                <div>
-                  <div className="text-sm text-muted-foreground">Last Updated</div>
-                  <div className="text-xl font-bold text-foreground">
-                    {new Date(project.created_at || '').toLocaleDateString()}
-                  </div>
-                </div>
+                <div className="space-y-3">
+                  <h4 className="font-medium text-foreground text-center">Project Actions</h4>
+                  
+                  <Button
+                    onClick={handleAnalyzeProject}
+                    disabled={isAnalyzing}
+                    className="w-full"
+                    variant="default"
+                  >
+                    {isAnalyzing ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Analyzing...
+                      </>
+                    ) : (
+                      <>
+                        <Satellite className="h-4 w-4 mr-2" />
+                        Analyze Project
+                      </>
+                    )}
+                  </Button>
 
-                {calculationBreakdown && (
-                  <div>
-                    <div className="text-sm text-muted-foreground">Carbon Calculation</div>
-                    <div className="text-sm font-mono bg-muted p-2 rounded mt-1">
-                      {calculationBreakdown.area}ha × {calculationBreakdown.biomassPerHa}t/ha
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                  <Button
+                    onClick={handleDownloadReport}
+                    disabled={isDownloading}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    {isDownloading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Download className="h-4 w-4 mr-2" />
+                        Download Report
+                      </>
+                    )}
+                  </Button>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-foreground">Actions</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Button 
-                  onClick={handleAnalyzeProject}
-                  disabled={isAnalyzing}
-                  variant="satellite"
-                  className="w-full"
-                >
-                  {isAnalyzing ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Analyzing...
-                    </>
-                  ) : (
-                    <>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    asChild
+                  >
+                    <Link to={`/satellite-visualization?project=${project.id}`}>
                       <BarChart3 className="h-4 w-4 mr-2" />
-                      Analyze Project
-                    </>
-                  )}
-                </Button>
+                      View Satellite Data
+                    </Link>
+                  </Button>
 
-                <Button 
-                  onClick={handleDownloadReport}
-                  disabled={isDownloading}
-                  variant="earth"
-                  className="w-full"
-                >
-                  {isDownloading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Generating Professional PDF...
-                    </>
-                  ) : (
-                    <>
-                      <Download className="h-4 w-4 mr-2" />
-                      Download Professional Report
-                    </>
-                  )}
-                </Button>
-
-                <Button asChild variant="outline" className="w-full">
-                  <Link to={`/projects/${project.id}/visualization`}>
-                    <BarChart3 className="h-4 w-4 mr-2" />
-                    View Satellite Data
-                  </Link>
-                </Button>
-
-                <Button asChild variant="outline" className="w-full">
-                  <Link to={`/projects/${project.id}/edit`}>
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit Project
-                  </Link>
-                </Button>
-                
-                <Button 
-                  variant="destructive" 
-                  className="w-full"
-                  onClick={handleDelete}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete Project
-                </Button>
+                  <div className="flex gap-2 pt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => navigate(`/projects/${project.id}/edit`)}
+                    >
+                      <Edit className="h-4 w-4 mr-1" />
+                      Edit
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="flex-1"
+                      onClick={handleDelete}
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Delete
+                    </Button>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>

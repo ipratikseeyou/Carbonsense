@@ -11,12 +11,14 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { toast } from '@/components/ui/use-toast';
 import Navigation from '@/components/Navigation';
 import MapLocationPicker from '@/components/MapLocationPicker';
+import CurrencySelector from '@/components/CurrencySelector';
 import { Upload, MapPin, Satellite, Shield, Zap } from 'lucide-react';
 const projectFormSchema = z.object({
   name: z.string().min(1, 'Project name is required').max(100, 'Name too long'),
   coordinates: z.string().regex(/^-?\d+\.?\d*,-?\d+\.?\d*$/, 'Invalid coordinates format. Use: latitude,longitude (e.g., 40.7128,-74.0060)'),
   carbon_tons: z.number().min(0.1, 'Carbon tons must be greater than 0'),
   price_per_ton: z.number().min(0).optional(),
+  currency: z.string().min(1, 'Currency is required'),
   satellite_image_url: z.string().url().optional().or(z.literal(''))
 });
 type ProjectFormData = z.infer<typeof projectFormSchema>;
@@ -35,6 +37,7 @@ const ProjectUpload = () => {
       coordinates: '40.7128,-74.0060',
       carbon_tons: 0,
       price_per_ton: 25,
+      currency: 'USD',
       satellite_image_url: ''
     }
   });
@@ -82,6 +85,7 @@ const ProjectUpload = () => {
         coordinates: data.coordinates,
         carbon_tons: data.carbon_tons,
         price_per_ton: data.price_per_ton || 25,
+        currency: data.currency || 'USD',
         satellite_image_url: data.satellite_image_url || null
       }]);
       if (error) throw error;
@@ -186,7 +190,7 @@ const ProjectUpload = () => {
                         <FormMessage className="text-red-600" />
                       </FormItem>} />
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <FormField control={form.control} name="carbon_tons" render={({
                     field
                   }) => <FormItem>
@@ -200,9 +204,21 @@ const ProjectUpload = () => {
                     <FormField control={form.control} name="price_per_ton" render={({
                     field
                   }) => <FormItem>
-                          <FormLabel className="text-black font-premium-sans font-medium">Price per Ton ($)</FormLabel>
+                          <FormLabel className="text-black font-premium-sans font-medium">Price per Ton</FormLabel>
                           <FormControl>
                             <Input type="number" step="0.01" placeholder="25.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} className="glass-panel border-primary/20 text-black placeholder:text-gray-500 focus:border-gold-warm/50 transition-all duration-300 hover:scale-[1.01] bg-white/95" />
+                          </FormControl>
+                          <FormMessage className="text-red-600" />
+                        </FormItem>} />
+
+                    <FormField control={form.control} name="currency" render={({
+                    field
+                  }) => <FormItem>
+                          <FormLabel className="text-black font-premium-sans font-medium">Currency</FormLabel>
+                          <FormControl>
+                            <div className="glass-panel border-primary/20 rounded-md overflow-hidden bg-white/95">
+                              <CurrencySelector value={field.value} onValueChange={field.onChange} />
+                            </div>
                           </FormControl>
                           <FormMessage className="text-red-600" />
                         </FormItem>} />
