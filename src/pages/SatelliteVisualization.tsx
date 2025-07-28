@@ -10,14 +10,16 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ArrowLeft, Satellite, TrendingUp, Leaf, BarChart3 } from 'lucide-react';
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { NDVIIndicator } from '@/components/NDVIIndicator';
-import { fetchSatelliteData, parseCoordinates, SatelliteApiError } from '@/services/satelliteService';
+import { fetchSatelliteData, fetchNDVITimeSeries, generateFallbackNDVIData, parseCoordinates, SatelliteApiError } from '@/services/satelliteService';
 import { toast } from '@/hooks/use-toast';
 
 const SatelliteVisualization = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [satelliteData, setSatelliteData] = useState(null);
+  const [ndviTimeSeriesData, setNdviTimeSeriesData] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isLoadingTimeSeries, setIsLoadingTimeSeries] = useState(false);
 
   // Fetch project data
   const { data: project, isLoading: projectLoading, error: projectError } = useQuery({
@@ -37,15 +39,52 @@ const SatelliteVisualization = () => {
     enabled: !!id,
   });
 
-  // Mock historical data for visualization
-  const mockHistoricalData = [
-    { month: 'Jan', ndvi: 0.65, carbon: 120, forestCover: 78 },
-    { month: 'Feb', ndvi: 0.68, carbon: 125, forestCover: 79 },
-    { month: 'Mar', ndvi: 0.72, carbon: 132, forestCover: 81 },
-    { month: 'Apr', ndvi: 0.69, carbon: 128, forestCover: 80 },
-    { month: 'May', ndvi: 0.74, carbon: 135, forestCover: 83 },
-    { month: 'Jun', ndvi: 0.71, carbon: 130, forestCover: 82 },
-  ];
+  // Load NDVI time series data on component mount or when project changes
+  useEffect(() => {
+    if (project?.id) {
+      loadNDVITimeSeries();
+    }
+  }, [project?.id]);
+
+  const loadNDVITimeSeries = async () => {
+    if (!project?.id) return;
+    
+    setIsLoadingTimeSeries(true);
+    try {
+      // Try to fetch real NDVI time series data
+      const timeSeriesData = await fetchNDVITimeSeries(project.id);
+      setNdviTimeSeriesData(timeSeriesData);
+      
+      toast({
+        title: "NDVI Data Loaded",
+        description: "Historical NDVI time series data loaded successfully",
+      });
+    } catch (error) {
+      console.warn('Failed to fetch NDVI time series, using fallback data:', error);
+      
+      // Generate fallback data with current project details
+      const fallbackData = generateFallbackNDVIData(project.id);
+      setNdviTimeSeriesData(fallbackData);
+      
+      toast({
+        title: "Using Sample Data",
+        description: "Real NDVI data unavailable, showing sample trends",
+        variant: "default",
+      });
+    } finally {
+      setIsLoadingTimeSeries(false);
+    }
+  };
+
+  // Transform NDVI time series data for chart visualization
+  const chartData = ndviTimeSeriesData ? 
+    ndviTimeSeriesData.dates.map((date, index) => ({
+      date: new Date(date).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
+      ndvi: ndviTimeSeriesData.ndvi_values[index],
+      confidence: ndviTimeSeriesData.confidence_scores[index],
+      // Generate carbon estimates based on NDVI (rough approximation)
+      carbon: Math.round(ndviTimeSeriesData.ndvi_values[index] * 200),
+    })) : [];
 
   const pieData = [
     { name: 'Forest Cover', value: satelliteData?.forest_cover_percentage || 82, fill: 'hsl(var(--primary))' },
@@ -167,6 +206,25 @@ const SatelliteVisualization = () => {
                 Last analyzed: {new Date(satelliteData.measurement_date).toLocaleDateString()}
               </Badge>
             )}
+            
+            <Button 
+              variant="outline"
+              onClick={loadNDVITimeSeries} 
+              disabled={isLoadingTimeSeries}
+              className="flex items-center gap-2"
+            >
+              {isLoadingTimeSeries ? (
+                <>
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  Loading Time Series...
+                </>
+              ) : (
+                <>
+                  <BarChart3 className="h-4 w-4" />
+                  Refresh NDVI Data
+                </>
+              )}
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -233,9 +291,9 @@ const SatelliteVisualization = () => {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={mockHistoricalData}>
+              <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" />
+                <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" />
                 <YAxis stroke="hsl(var(--muted-foreground))" />
                 <Tooltip 
                   contentStyle={{ 
@@ -310,9 +368,9 @@ const SatelliteVisualization = () => {
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={400}>
-            <AreaChart data={mockHistoricalData}>
+            <AreaChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" />
+              <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" />
               <YAxis stroke="hsl(var(--muted-foreground))" />
               <Tooltip 
                 contentStyle={{ 

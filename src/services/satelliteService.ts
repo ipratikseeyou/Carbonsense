@@ -167,3 +167,136 @@ export const getNDVIStatus = (ndvi: number): string => {
 export const formatConfidence = (confidence: number): string => {
   return `${Math.round(confidence * 100)}%`;
 };
+
+// NDVI Time Series Data Types
+interface NDVITimeSeriesData {
+  dates: string[];
+  ndvi_values: number[];
+  mean_ndvi: number;
+  ndvi_trend: number;
+  confidence_scores: number[];
+  analysis_period: {
+    start_date: string;
+    end_date: string;
+  };
+}
+
+interface NDVITimeSeriesResponse {
+  success: boolean;
+  data: NDVITimeSeriesData;
+  message?: string;
+}
+
+// Fetch NDVI time series data for a project
+export const fetchNDVITimeSeries = async (
+  projectId: string, 
+  startDate?: string, 
+  endDate?: string
+): Promise<NDVITimeSeriesData> => {
+  try {
+    const params = new URLSearchParams();
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
+    
+    const queryString = params.toString();
+    const url = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.PROJECT_NDVI(projectId)}${queryString ? `?${queryString}` : ''}`;
+    
+    console.log('Fetching NDVI time series:', { projectId, startDate, endDate, url });
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.REQUEST_TIMEOUT);
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: API_CONFIG.DEFAULT_HEADERS,
+      signal: controller.signal,
+    });
+    
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      throw new SatelliteApiError(
+        `NDVI API request failed: ${response.status} ${response.statusText}`,
+        response.status
+      );
+    }
+    
+    const result: NDVITimeSeriesResponse = await response.json();
+    
+    if (!result.success || !result.data) {
+      throw new SatelliteApiError(
+        result.message || 'Invalid NDVI API response format'
+      );
+    }
+    
+    console.log('NDVI time series data received:', result.data);
+    return result.data;
+    
+  } catch (error) {
+    console.error('Error fetching NDVI time series:', error);
+    
+    if (error instanceof SatelliteApiError) {
+      throw error;
+    }
+    
+    if (error.name === 'AbortError') {
+      throw new SatelliteApiError('NDVI request timeout');
+    }
+    
+    throw new SatelliteApiError('Failed to fetch NDVI time series data');
+  }
+};
+
+// Generate fallback NDVI data when API is unavailable
+export const generateFallbackNDVIData = (
+  projectId: string,
+  startDate?: string,
+  endDate?: string
+): NDVITimeSeriesData => {
+  const now = new Date();
+  const start = startDate ? new Date(startDate) : new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+  const end = endDate ? new Date(endDate) : now;
+  
+  const dates: string[] = [];
+  const ndvi_values: number[] = [];
+  const confidence_scores: number[] = [];
+  
+  // Generate monthly data points
+  const current = new Date(start);
+  while (current <= end) {
+    dates.push(current.toISOString().split('T')[0]);
+    
+    // Generate realistic NDVI values with seasonal variation
+    const month = current.getMonth();
+    const seasonalBase = 0.6 + 0.2 * Math.sin((month - 3) * Math.PI / 6); // Peak in summer
+    const noise = (Math.random() - 0.5) * 0.1;
+    ndvi_values.push(Math.max(0.1, Math.min(0.9, seasonalBase + noise)));
+    
+    confidence_scores.push(0.7 + Math.random() * 0.2); // 70-90% confidence
+    
+    current.setMonth(current.getMonth() + 1);
+  }
+  
+  const mean_ndvi = ndvi_values.reduce((sum, val) => sum + val, 0) / ndvi_values.length;
+  
+  // Calculate trend (simple linear regression slope)
+  const n = ndvi_values.length;
+  const sumX = (n * (n - 1)) / 2;
+  const sumY = ndvi_values.reduce((sum, val) => sum + val, 0);
+  const sumXY = ndvi_values.reduce((sum, val, i) => sum + val * i, 0);
+  const sumX2 = (n * (n - 1) * (2 * n - 1)) / 6;
+  
+  const ndvi_trend = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+  
+  return {
+    dates,
+    ndvi_values,
+    mean_ndvi,
+    ndvi_trend,
+    confidence_scores,
+    analysis_period: {
+      start_date: start.toISOString().split('T')[0],
+      end_date: end.toISOString().split('T')[0]
+    }
+  };
+};
