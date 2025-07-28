@@ -27,11 +27,14 @@ export interface AnalysisResult {
     location?: { lat: number; lon: number };
   };
   carbon_stock?: {
-    total_tons?: number;
-    per_hectare?: number;
+    total_carbon_tons?: number;
+    carbon_per_hectare?: number;
     area_hectares?: number;
     vegetation_density?: string;
     confidence_level?: number;
+    mean_ndvi?: number;
+    forest_type?: string;
+    date?: string;
   };
 }
 
@@ -83,7 +86,26 @@ export const carbonApi = {
       method: 'POST',
     });
     if (!response.ok) throw new Error('Failed to analyze project');
-    return response.json();
+    const data = await response.json();
+    
+    console.log('Raw analyzeProject response:', data);
+    
+    // Transform the response to match AnalysisResult interface
+    return {
+      status: data.status || 'success',
+      project_id: data.project_id || projectId,
+      ndvi_summary: data.ndvi_summary || data.ndvi,
+      carbon_stock: {
+        total_carbon_tons: data.carbon_stock?.total_carbon_tons || data.carbon_stock?.total_tons || 0,
+        carbon_per_hectare: data.carbon_stock?.carbon_per_hectare || data.carbon_stock?.per_hectare || 0,
+        area_hectares: data.carbon_stock?.area_hectares || 0,
+        vegetation_density: data.carbon_stock?.vegetation_density || 'unknown',
+        confidence_level: data.carbon_stock?.confidence_level || 0,
+        mean_ndvi: data.carbon_stock?.mean_ndvi || data.ndvi_summary?.mean_ndvi || 0,
+        forest_type: data.carbon_stock?.forest_type || 'tropical',
+        date: data.carbon_stock?.date || new Date().toISOString().split('T')[0]
+      }
+    };
   },
 
   // Get NDVI data
@@ -99,10 +121,29 @@ export const carbonApi = {
   },
 
   // Test satellite location
-  testSatelliteLocation: async (lat: number, lon: number) => {
+  testSatelliteLocation: async (lat: number, lon: number): Promise<AnalysisResult> => {
     const response = await fetch(`${API_CONFIG.BASE_URL}/satellite/test-location?lat=${lat}&lon=${lon}`);
     if (!response.ok) throw new Error('Failed to test location');
-    return response.json();
+    const data = await response.json();
+    
+    console.log('Raw testSatelliteLocation response:', data);
+    
+    // Transform the response to match AnalysisResult interface
+    return {
+      status: data.status || 'success',
+      project_id: data.project_id || 'test',
+      ndvi_summary: data.ndvi_summary || data.ndvi,
+      carbon_stock: {
+        total_carbon_tons: data.carbon_stock?.total_carbon_tons || data.carbon_stock?.total_tons || 0,
+        carbon_per_hectare: data.carbon_stock?.carbon_per_hectare || data.carbon_stock?.per_hectare || 0,
+        area_hectares: data.carbon_stock?.area_hectares || 0,
+        vegetation_density: data.carbon_stock?.vegetation_density || 'unknown',
+        confidence_level: data.carbon_stock?.confidence_level || 0,
+        mean_ndvi: data.carbon_stock?.mean_ndvi || data.ndvi_summary?.mean_ndvi || 0,
+        forest_type: data.carbon_stock?.forest_type || 'tropical',
+        date: data.carbon_stock?.date || new Date().toISOString().split('T')[0]
+      }
+    };
   },
 
   // Get NDVI data by coordinates (for when we have coordinates but no project in backend)
