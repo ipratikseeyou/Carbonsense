@@ -54,6 +54,7 @@ export type Database = {
           carbon_tons: number
           coordinates: string
           created_at: string | null
+          currency: string | null
           id: string
           name: string
           price_per_ton: number | null
@@ -63,6 +64,7 @@ export type Database = {
           carbon_tons: number
           coordinates: string
           created_at?: string | null
+          currency?: string | null
           id?: string
           name: string
           price_per_ton?: number | null
@@ -72,6 +74,7 @@ export type Database = {
           carbon_tons?: number
           coordinates?: string
           created_at?: string | null
+          currency?: string | null
           id?: string
           name?: string
           price_per_ton?: number | null
