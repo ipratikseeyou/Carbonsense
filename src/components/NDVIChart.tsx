@@ -28,12 +28,14 @@ ChartJS.register(
 
 interface NDVIChartProps {
   projectId: string;
+  coordinates?: string;
   startDate?: string;
   endDate?: string;
 }
 
 export const NDVIChart: React.FC<NDVIChartProps> = ({ 
-  projectId, 
+  projectId,
+  coordinates, 
   startDate, 
   endDate 
 }) => {
@@ -47,9 +49,20 @@ export const NDVIChart: React.FC<NDVIChartProps> = ({
       setLoading(true);
       setError(null);
       console.log('Loading NDVI data for project:', projectId);
+      console.log('Coordinates:', coordinates);
       console.log('Date range:', { startDate, endDate });
       
-      const data = await carbonApi.getNDVIData(projectId, startDate, endDate);
+      let data;
+      if (coordinates) {
+        // Use coordinates to get NDVI data from AWS backend
+        const [lat, lon] = coordinates.split(',').map(Number);
+        console.log('Using coordinates for NDVI data:', { lat, lon });
+        data = await carbonApi.getNDVIDataByCoordinates(lat, lon, startDate, endDate);
+      } else {
+        // Fallback to projectId method
+        data = await carbonApi.getNDVIData(projectId, startDate, endDate);
+      }
+      
       console.log('NDVI data loaded:', data);
       
       setNdviData(data);
@@ -81,7 +94,7 @@ export const NDVIChart: React.FC<NDVIChartProps> = ({
 
   useEffect(() => {
     loadNDVIData();
-  }, [projectId, startDate, endDate]);
+  }, [projectId, coordinates, startDate, endDate]);
 
   const chartData = {
     labels: ndviData?.time_series.map(point => 

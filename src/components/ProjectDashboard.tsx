@@ -1,10 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { carbonApi, Project, AnalysisResult } from '@/services/carbonApi';
+import { carbonApi, AnalysisResult } from '@/services/carbonApi';
+import { supabase } from '@/integrations/supabase/client';
 import NDVIChart from './NDVIChart';
 import { Loader2, AlertCircle, MapPin, DollarSign, Calendar, Trees, Download, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+
+// Project interface for Supabase data
+interface Project {
+  id: string;
+  name: string;
+  coordinates: string;
+  carbon_tons: number;
+  price_per_ton?: number;
+  currency?: string;
+  satellite_image_url?: string;
+  created_at?: string;
+  monitoring_period_start?: string;
+  monitoring_period_end?: string;
+}
 
 interface ProjectDashboardProps {
   projectId: string;
@@ -26,11 +41,19 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ projectId })
   const loadProject = async () => {
     try {
       setLoading(true);
-      console.log('Loading project from AWS API:', projectId);
+      console.log('Loading project from Supabase:', projectId);
       
-      const projectData = await carbonApi.getProject(projectId);
-      console.log('Project data loaded:', projectData);
-      
+      const { data: projectData, error: supabaseError } = await supabase
+        .from('projects')
+        .select('*')
+        .eq('id', projectId)
+        .single();
+
+      if (supabaseError) {
+        throw new Error(supabaseError.message);
+      }
+
+      console.log('Project data loaded from Supabase:', projectData);
       setProject(projectData);
       setError(null);
     } catch (err) {
@@ -48,14 +71,23 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ projectId })
   };
 
   const runAnalysis = async () => {
+    if (!project?.coordinates) {
+      setError('Project coordinates not available');
+      return;
+    }
+
     try {
       setAnalyzing(true);
       setError(null);
       
       console.log('Starting analysis for project:', projectId);
-      console.log('Project coordinates:', project?.coordinates);
+      console.log('Project coordinates:', project.coordinates);
       
-      const result = await carbonApi.analyzeProject(projectId);
+      const [lat, lon] = project.coordinates.split(',').map(Number);
+      console.log('Parsed coordinates:', { lat, lon });
+      
+      // Use testSatelliteLocation with coordinates since AWS backend doesn't have the project
+      const result = await carbonApi.testSatelliteLocation(lat, lon);
       console.log('Analysis result:', result);
       
       setAnalysis(result);
@@ -78,28 +110,42 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ projectId })
   };
 
   const downloadReport = async () => {
+    if (!project) {
+      toast({
+        title: 'Download Failed',
+        description: 'Project data not available',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     try {
       setDownloading(true);
-      const blob = await carbonApi.downloadReport(projectId);
       
-      // Create download link
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${project?.name || 'project'}-report.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
+      // Generate report using local project data and analysis results
+      const { generateProjectPDF } = await import('@/utils/generateProjectPDF');
+      
+      // Convert analysis result to the format expected by generateProjectPDF
+      const analysisForPdf = analysis ? {
+        ndvi: analysis.ndvi_summary?.mean_ndvi,
+        forest_cover: analysis.carbon_stock?.confidence_level ? analysis.carbon_stock.confidence_level * 100 : undefined,
+        carbon_estimate: analysis.carbon_stock?.total_tons,
+        confidence_score: analysis.carbon_stock?.confidence_level,
+        recommendations: `Based on satellite analysis: ${analysis.carbon_stock?.vegetation_density || 'Standard vegetation density detected'}`
+      } : undefined;
+      
+      const pdf = generateProjectPDF(project, analysisForPdf);
+      pdf.save(`${project.name || 'project'}-report.pdf`);
 
       toast({
         title: 'Report Downloaded',
         description: 'Project report has been downloaded successfully',
       });
     } catch (err) {
+      console.error('Report generation error:', err);
       toast({
         title: 'Download Failed',
-        description: 'Failed to download project report',
+        description: 'Failed to generate project report',
         variant: 'destructive',
       });
     } finally {
@@ -307,6 +353,7 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ projectId })
           {(analysis.carbon_stock?.total_tons || 0) > 0 && (
             <NDVIChart 
               projectId={projectId}
+              coordinates={project.coordinates}
               startDate={project.monitoring_period_start}
               endDate={project.monitoring_period_end}
             />

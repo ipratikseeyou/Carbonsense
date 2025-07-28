@@ -105,6 +105,19 @@ export const carbonApi = {
     return response.json();
   },
 
+  // Get NDVI data by coordinates (for when we have coordinates but no project in backend)
+  getNDVIDataByCoordinates: async (lat: number, lon: number, startDate?: string, endDate?: string): Promise<NDVITimeSeriesData> => {
+    const params = new URLSearchParams();
+    params.append('lat', lat.toString());
+    params.append('lon', lon.toString());
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
+    
+    const response = await fetch(`${API_CONFIG.BASE_URL}/satellite/ndvi-timeseries?${params.toString()}`);
+    if (!response.ok) throw new Error('Failed to fetch NDVI data by coordinates');
+    return response.json();
+  },
+
   // Get currencies
   getCurrencies: async () => {
     const response = await fetch(`${API_CONFIG.BASE_URL}/currencies`);
