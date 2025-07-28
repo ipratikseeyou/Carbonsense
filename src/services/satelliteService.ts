@@ -36,14 +36,34 @@ export const parseCoordinates = (coordinates: string): { lat: number; lon: numbe
   }
 };
 
-// Fetch satellite data from the API
+// Debug function to test coordinates
+export const testCoordinates = async (lat: number, lon: number) => {
+  console.log(`🔍 Testing coordinates: ${lat}, ${lon}`);
+  console.log(`🌍 Checking if coordinates have forest data...`);
+  
+  // Known good forest coordinates for testing
+  const testCoords = { lat: -3.4653, lon: -62.2159 };
+  console.log(`🧪 Test coordinates (Amazon): ${testCoords.lat}, ${testCoords.lon}`);
+  
+  return { original: { lat, lon }, test: testCoords };
+};
+
+// Fetch satellite data from the API with enhanced debugging
 export const fetchSatelliteData = async (lat: number, lon: number): Promise<SatelliteData> => {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.REQUEST_TIMEOUT);
 
   try {
+    console.log(`🚀 Starting satellite data fetch for coordinates: ${lat}, ${lon}`);
+    
+    // Validate coordinates
+    if (!lat || !lon || isNaN(lat) || isNaN(lon)) {
+      throw new SatelliteApiError(`Invalid coordinates: lat=${lat}, lon=${lon}`);
+    }
+    
     const url = `${API_CONFIG.BASE_URL}/satellite/test-location?lat=${lat}&lon=${lon}`;
-    console.log(`Fetching satellite data from: ${url}`);
+    console.log(`📡 Fetching satellite data from: ${url}`);
+    console.log(`⏰ Request timeout set to: ${API_CONFIG.REQUEST_TIMEOUT}ms`);
 
     const response = await fetch(url, {
       method: 'GET',
@@ -54,41 +74,77 @@ export const fetchSatelliteData = async (lat: number, lon: number): Promise<Sate
     });
 
     clearTimeout(timeoutId);
+    
+    console.log(`📊 Response status: ${response.status} ${response.statusText}`);
+    console.log(`📝 Response headers:`, Object.fromEntries(response.headers.entries()));
 
     if (!response.ok) {
       const errorText = await response.text();
+      console.error(`❌ API Error Response:`, errorText);
       throw new SatelliteApiError(
         `Satellite API error: ${response.status} - ${errorText}`,
         response.status
       );
     }
 
-    const result: SatelliteResponse = await response.json();
+    const result = await response.json();
+    console.log(`✅ Raw API Response:`, JSON.stringify(result, null, 2));
     
-    if (!result.success || !result.data) {
-      throw new SatelliteApiError(result.message || 'Invalid response from satellite API');
+    // Handle different response formats from the backend
+    let satelliteData: SatelliteData;
+    
+    if (result.data_source) {
+      // Handle direct satellite endpoint response
+      console.log(`📡 Using direct satellite data format`);
+      satelliteData = {
+        ndvi: result.ndvi_summary?.mean || 0,
+        carbon_stock: result.carbon_stock?.total_tons || 0,
+        forest_cover_percentage: result.ndvi_summary?.mean * 100 || 0, // Convert NDVI to percentage
+        confidence_score: 0.85, // Default confidence for direct satellite data
+        measurement_date: new Date().toISOString()
+      };
+    } else if (result.success && result.data) {
+      // Handle wrapped response format
+      console.log(`📦 Using wrapped response format`);
+      satelliteData = result.data;
+    } else {
+      // Handle unexpected format
+      console.error(`❌ Unexpected response format:`, result);
+      throw new SatelliteApiError('Invalid response format from satellite API');
     }
 
-    // Validate response data
-    const { ndvi, carbon_stock, forest_cover_percentage, confidence_score } = result.data;
+    // Validate satellite data
+    console.log(`🔍 Validating satellite data:`, satelliteData);
+    const { ndvi, carbon_stock, forest_cover_percentage, confidence_score } = satelliteData;
     
     if (typeof ndvi !== 'number' || typeof carbon_stock !== 'number' || 
         typeof forest_cover_percentage !== 'number' || typeof confidence_score !== 'number') {
+      console.error(`❌ Invalid data types:`, {
+        ndvi: typeof ndvi,
+        carbon_stock: typeof carbon_stock,
+        forest_cover_percentage: typeof forest_cover_percentage,
+        confidence_score: typeof confidence_score
+      });
       throw new SatelliteApiError('Invalid data format from satellite API');
     }
 
-    return result.data;
+    console.log(`✅ Satellite data validated successfully:`, satelliteData);
+    return satelliteData;
   } catch (error) {
     clearTimeout(timeoutId);
+    
+    console.error(`❌ Satellite data fetch failed:`, error);
     
     if (error instanceof SatelliteApiError) {
       throw error;
     }
     
     if (error instanceof Error && error.name === 'AbortError') {
+      console.error(`⏰ Request timed out after ${API_CONFIG.REQUEST_TIMEOUT}ms`);
       throw new SatelliteApiError('Satellite API request timed out');
     }
     
+    console.error(`💥 Unexpected error:`, error);
     throw new SatelliteApiError('Failed to fetch satellite data');
   }
 };

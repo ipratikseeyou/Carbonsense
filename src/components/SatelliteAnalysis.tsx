@@ -24,22 +24,72 @@ export const SatelliteAnalysis: React.FC<SatelliteAnalysisProps> = ({
     setLoading(true);
     setError(null);
     
+    console.log('🎯 SatelliteAnalysis component starting analysis...');
+    console.log(`📋 Project ID: ${projectId}`);
+    console.log(`📍 Coordinates: lat=${coordinates.lat}, lng=${coordinates.lng}`);
+    
     try {
+      console.log('🚀 Starting satellite analysis...');
+      console.log('📞 Calling analyzeProject service...');
+      
       const result = await analyzeProject(projectId, coordinates);
+      
+      console.log('✅ Analysis completed successfully:', result);
+      console.log('📊 Setting analysis data in component state...');
+      
       setData(result);
       toast({
         title: "Analysis Complete",
         description: "Satellite data analysis completed successfully",
       });
+      
+      console.log('🎉 Analysis process complete!');
     } catch (err) {
-      const errorMessage = 'Failed to analyze satellite data. Please try again.';
+      console.error('❌ Satellite analysis failed:', err);
+      console.error('🔍 Error details:', {
+        name: err instanceof Error ? err.name : 'Unknown',
+        message: err instanceof Error ? err.message : 'Unknown error',
+        stack: err instanceof Error ? err.stack : 'No stack trace'
+      });
+      
+      const errorMessage = err instanceof Error ? err.message : 'Failed to analyze satellite data';
       setError(errorMessage);
       toast({
         title: "Analysis Failed",
+        description: `Analysis failed: ${errorMessage}`,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+      console.log('🏁 Analysis attempt finished (loading set to false)');
+    }
+  };
+
+  // Debug function to test with known forest coordinates
+  const handleTestWithForestCoords = async () => {
+    const forestCoords = { lat: -3.4653, lng: -62.2159 }; // Amazon rainforest
+    console.log('🌳 Testing with known forest coordinates:', forestCoords);
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const result = await analyzeProject(projectId, forestCoords);
+      console.log('🌲 Forest test completed:', result);
+      setData(result);
+      toast({
+        title: "Forest Test Complete",
+        description: "Analysis with forest coordinates completed!",
+      });
+    } catch (err) {
+      console.error('🌲 Forest test failed:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Forest test failed';
+      setError(errorMessage);
+      toast({
+        title: "Forest Test Failed",
         description: errorMessage,
         variant: "destructive",
       });
-      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -58,23 +108,40 @@ export const SatelliteAnalysis: React.FC<SatelliteAnalysisProps> = ({
       </CardHeader>
       <CardContent className="space-y-6">
         {!data && (
-          <Button 
-            onClick={handleAnalyze} 
-            disabled={loading}
-            className="w-full"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Analyzing...
-              </>
-            ) : (
-              <>
-                <Satellite className="mr-2 h-4 w-4" />
-                Analyze Satellite Data
-              </>
-            )}
-          </Button>
+          <div className="space-y-2">
+            <Button 
+              onClick={handleAnalyze} 
+              disabled={loading}
+              className="w-full"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Analyzing...
+                </>
+              ) : (
+                <>
+                  <Satellite className="mr-2 h-4 w-4" />
+                  Analyze Satellite Data
+                </>
+              )}
+            </Button>
+            
+            <Button 
+              onClick={handleTestWithForestCoords} 
+              disabled={loading}
+              variant="outline"
+              className="w-full"
+            >
+              🌳 Test with Forest Coordinates (Amazon)
+            </Button>
+            
+            <div className="text-xs text-muted-foreground mt-2 p-2 bg-muted rounded">
+              <p><strong>Current coordinates:</strong> {coordinates.lat.toFixed(6)}, {coordinates.lng.toFixed(6)}</p>
+              <p><strong>Debug:</strong> Check browser console for detailed logs</p>
+              <p><strong>Forest test:</strong> Uses Amazon coordinates (-3.4653, -62.2159)</p>
+            </div>
+          </div>
         )}
 
         {error && (
