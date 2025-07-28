@@ -46,13 +46,27 @@ export const NDVIChart: React.FC<NDVIChartProps> = ({
     try {
       setLoading(true);
       setError(null);
+      console.log('Loading NDVI data for project:', projectId);
+      console.log('Date range:', { startDate, endDate });
+      
       const data = await carbonApi.getNDVIData(projectId, startDate, endDate);
+      console.log('NDVI data loaded:', data);
+      
       setNdviData(data);
-      toast({
-        title: 'NDVI Data Loaded',
-        description: `Loaded ${data.time_series.length} data points`,
-      });
+      if (data && data.time_series.length > 0) {
+        toast({
+          title: 'NDVI Data Loaded',
+          description: `Loaded ${data.time_series.length} data points`,
+        });
+      } else {
+        toast({
+          title: 'No NDVI Data',
+          description: 'No satellite data available for this location/time period',
+          variant: 'destructive',
+        });
+      }
     } catch (err) {
+      console.error('Error loading NDVI data:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to load NDVI data';
       setError(errorMessage);
       toast({

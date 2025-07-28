@@ -26,13 +26,20 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ projectId })
   const loadProject = async () => {
     try {
       setLoading(true);
+      console.log('Loading project from AWS API:', projectId);
+      
       const projectData = await carbonApi.getProject(projectId);
+      console.log('Project data loaded:', projectData);
+      
       setProject(projectData);
+      setError(null);
     } catch (err) {
-      setError('Failed to load project');
+      console.error('Failed to load project:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load project';
+      setError(errorMessage);
       toast({
         title: 'Error',
-        description: 'Failed to load project details',
+        description: `Failed to load project: ${errorMessage}`,
         variant: 'destructive',
       });
     } finally {
@@ -44,13 +51,20 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ projectId })
     try {
       setAnalyzing(true);
       setError(null);
+      
+      console.log('Starting analysis for project:', projectId);
+      console.log('Project coordinates:', project?.coordinates);
+      
       const result = await carbonApi.analyzeProject(projectId);
+      console.log('Analysis result:', result);
+      
       setAnalysis(result);
       toast({
         title: 'Analysis Complete',
         description: 'Satellite analysis has been completed successfully',
       });
     } catch (err) {
+      console.error('Analysis error:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to analyze project';
       setError(errorMessage);
       toast({
@@ -228,41 +242,75 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ projectId })
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card>
-                  <CardContent className="p-4">
-                    <p className="text-sm text-muted-foreground">Total Carbon</p>
-                    <p className="text-2xl font-bold text-primary">
-                      {analysis.carbon_stock.total_carbon_tons.toLocaleString()} tons
-                    </p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-4">
-                    <p className="text-sm text-muted-foreground">Carbon per Hectare</p>
-                    <p className="text-2xl font-bold text-secondary">
-                      {analysis.carbon_stock.carbon_per_hectare.toFixed(2)} tons/ha
-                    </p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-4">
-                    <p className="text-sm text-muted-foreground">Area</p>
-                    <p className="text-2xl font-bold text-accent">
-                      {analysis.carbon_stock.area_hectares.toLocaleString()} ha
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
+              {analysis.carbon_stock.total_carbon_tons === 0 ? (
+                <div className="text-center py-8">
+                  <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">No Satellite Data Available</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Satellite analysis could not find sufficient vegetation data for this location. 
+                    This may be due to:
+                  </p>
+                  <ul className="text-sm text-muted-foreground text-left max-w-md mx-auto">
+                    <li>• Cloud cover during satellite passes</li>
+                    <li>• Limited forest cover in the area</li>
+                    <li>• Recent deforestation or land use changes</li>
+                    <li>• Coordinates pointing to water bodies or urban areas</li>
+                  </ul>
+                  <Button 
+                    onClick={runAnalysis} 
+                    variant="outline" 
+                    className="mt-4"
+                    disabled={analyzing}
+                  >
+                    {analyzing ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Retrying...
+                      </>
+                    ) : (
+                      'Retry Analysis'
+                    )}
+                  </Button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Card>
+                    <CardContent className="p-4">
+                      <p className="text-sm text-muted-foreground">Total Carbon</p>
+                      <p className="text-2xl font-bold text-primary">
+                        {analysis.carbon_stock.total_carbon_tons.toLocaleString()} tons
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4">
+                      <p className="text-sm text-muted-foreground">Carbon per Hectare</p>
+                      <p className="text-2xl font-bold text-secondary">
+                        {analysis.carbon_stock.carbon_per_hectare.toFixed(2)} tons/ha
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4">
+                      <p className="text-sm text-muted-foreground">Area</p>
+                      <p className="text-2xl font-bold text-accent">
+                        {analysis.carbon_stock.area_hectares.toLocaleString()} ha
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
             </CardContent>
           </Card>
 
-          {/* NDVI Chart */}
-          <NDVIChart 
-            projectId={projectId}
-            startDate={project.monitoring_period_start}
-            endDate={project.monitoring_period_end}
-          />
+          {/* NDVI Chart - only show if we have meaningful data */}
+          {analysis.carbon_stock.total_carbon_tons > 0 && (
+            <NDVIChart 
+              projectId={projectId}
+              startDate={project.monitoring_period_start}
+              endDate={project.monitoring_period_end}
+            />
+          )}
         </div>
       )}
     </div>
