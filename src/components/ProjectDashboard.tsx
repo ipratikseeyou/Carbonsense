@@ -242,7 +242,7 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ projectId })
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {analysis.carbon_stock.total_carbon_tons === 0 ? (
+              {(analysis.carbon_stock?.total_tons || 0) === 0 ? (
                 <div className="text-center py-8">
                   <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <h3 className="text-lg font-semibold mb-2">No Satellite Data Available</h3>
@@ -277,25 +277,25 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ projectId })
                   <Card>
                     <CardContent className="p-4">
                       <p className="text-sm text-muted-foreground">Total Carbon</p>
-                      <p className="text-2xl font-bold text-primary">
-                        {analysis.carbon_stock.total_carbon_tons.toLocaleString()} tons
-                      </p>
+                       <p className="text-2xl font-bold text-primary">
+                         {(analysis.carbon_stock?.total_tons || 0).toLocaleString()} tons
+                       </p>
                     </CardContent>
                   </Card>
                   <Card>
                     <CardContent className="p-4">
                       <p className="text-sm text-muted-foreground">Carbon per Hectare</p>
-                      <p className="text-2xl font-bold text-secondary">
-                        {analysis.carbon_stock.carbon_per_hectare.toFixed(2)} tons/ha
-                      </p>
+                       <p className="text-2xl font-bold text-secondary">
+                         {(analysis.carbon_stock?.per_hectare || 0).toFixed(2)} tons/ha
+                       </p>
                     </CardContent>
                   </Card>
                   <Card>
                     <CardContent className="p-4">
                       <p className="text-sm text-muted-foreground">Area</p>
-                      <p className="text-2xl font-bold text-accent">
-                        {analysis.carbon_stock.area_hectares.toLocaleString()} ha
-                      </p>
+                       <p className="text-2xl font-bold text-accent">
+                         {(analysis.carbon_stock?.area_hectares || 0).toLocaleString()} ha
+                       </p>
                     </CardContent>
                   </Card>
                 </div>
@@ -304,7 +304,7 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ projectId })
           </Card>
 
           {/* NDVI Chart - only show if we have meaningful data */}
-          {analysis.carbon_stock.total_carbon_tons > 0 && (
+          {(analysis.carbon_stock?.total_tons || 0) > 0 && (
             <NDVIChart 
               projectId={projectId}
               startDate={project.monitoring_period_start}

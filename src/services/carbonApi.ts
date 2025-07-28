@@ -18,20 +18,20 @@ export interface Project {
 export interface AnalysisResult {
   status: string;
   project_id: string;
-  ndvi: {
-    dates: string[];
-    ndvi_values: number[];
-    mean_ndvi: number;
-    ndvi_trend: number;
-    satellite: string;
-    location: { lat: number; lon: number };
+  ndvi_summary?: {
+    dates?: string[];
+    ndvi_values?: number[];
+    mean_ndvi?: number;
+    ndvi_trend?: number;
+    satellite?: string;
+    location?: { lat: number; lon: number };
   };
-  carbon_stock: {
-    total_carbon_tons: number;
-    carbon_per_hectare: number;
-    area_hectares: number;
-    vegetation_density: string;
-    confidence_level: number;
+  carbon_stock?: {
+    total_tons?: number;
+    per_hectare?: number;
+    area_hectares?: number;
+    vegetation_density?: string;
+    confidence_level?: number;
   };
 }
 
