@@ -89,10 +89,13 @@ export const createProject = async (projectData: CreateProjectData) => {
 };
 
 export const analyzeProject = async (projectId: string, coordinates: { lat: number; lng: number }) => {
-  console.log('🚀 Starting enhanced project analysis');
+  console.log('🚀 Starting enhanced project analysis with sync verification');
   console.log(`📋 Project ID: ${projectId}`);
   console.log(`📍 Coordinates: lat=${coordinates.lat}, lng=${coordinates.lng}`);
   console.log(`🔧 Using API base URL: ${API_CONFIG.BASE_URL}`);
+
+  // Import sync service dynamically to avoid circular dependencies
+  const { ensureProjectSync } = await import('./projectSyncService');
 
   // Validate inputs
   if (!projectId || typeof projectId !== 'string') {
@@ -104,7 +107,19 @@ export const analyzeProject = async (projectId: string, coordinates: { lat: numb
   }
 
   try {
-    // First, try project-specific analysis endpoint
+    // Step 1: Ensure project is synced to backend
+    console.log('🔄 Ensuring project sync...');
+    const syncStatus = await ensureProjectSync(projectId);
+    
+    if (!syncStatus.synced) {
+      console.warn(`⚠️ Project sync failed: ${syncStatus.error}`);
+      console.log('🔄 Falling back to satellite data due to sync failure...');
+      return await fallbackToSatelliteData(projectId, coordinates);
+    }
+
+    console.log(`✅ Project synced successfully, backend ID: ${syncStatus.backendId}`);
+
+    // Step 2: Try project-specific analysis endpoint
     console.log('🎯 Attempting project-specific analysis...');
     const analyzeUrl = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ANALYZE_PROJECT(projectId)}`;
     console.log(`📡 Analysis URL: ${analyzeUrl}`);
@@ -151,13 +166,9 @@ export const analyzeProject = async (projectId: string, coordinates: { lat: numb
       const errorText = await analyzeResponse.text();
       console.error(`❌ Project analysis failed: ${analyzeResponse.status} - ${errorText}`);
       
-      // If 404, the project doesn't exist in backend, try satellite data fallback
-      if (analyzeResponse.status === 404) {
-        console.log('🔄 Project not found in backend, falling back to satellite data...');
-        return await fallbackToSatelliteData(projectId, coordinates);
-      } else {
-        throw new Error(`Analysis failed: ${analyzeResponse.status} - ${errorText}`);
-      }
+      // If still 404 after sync, use enhanced satellite fallback
+      console.log('🔄 Project analysis failed, using enhanced satellite fallback...');
+      return await fallbackToSatelliteData(projectId, coordinates);
     }
 
   } catch (error) {

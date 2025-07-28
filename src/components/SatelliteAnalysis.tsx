@@ -24,44 +24,86 @@ export const SatelliteAnalysis: React.FC<SatelliteAnalysisProps> = ({
     setLoading(true);
     setError(null);
     
-    console.log('🎯 SatelliteAnalysis component starting analysis...');
-    console.log(`📋 Project ID: ${projectId}`);
-    console.log(`📍 Coordinates: lat=${coordinates.lat}, lng=${coordinates.lng}`);
-    
     try {
-      console.log('🚀 Starting satellite analysis...');
-      console.log('📞 Calling analyzeProject service...');
+      console.log('🎯 Starting enhanced satellite analysis...');
+      console.log(`📋 Project ID: ${projectId}`);
+      console.log(`📍 Coordinates: ${coordinates.lat}, ${coordinates.lng}`);
       
-      const result = await analyzeProject(projectId, coordinates);
+      // Import geolocation service for enhanced analysis
+      const { 
+        generateAnalysisGrid, 
+        calculateBoundingBox, 
+        validateForestCoordinates,
+        performEnhancedAnalysis 
+      } = await import('@/services/geolocationService');
       
-      console.log('✅ Analysis completed successfully:', result);
-      console.log('📊 Setting analysis data in component state...');
+      // Step 1: Validate coordinates for forest data
+      const validation = await validateForestCoordinates({ lat: coordinates.lat, lon: coordinates.lng });
+      console.log('🌲 Coordinate validation:', validation);
+      
+      if (!validation.valid) {
+        toast({
+          title: "Coordinate Warning",
+          description: validation.reason || "These coordinates may have limited forest data",
+          variant: "destructive",
+        });
+      }
+      
+      // Step 2: Determine analysis type based on project size (simplified logic)
+      const analysisType: 'point' | 'grid' | 'polygon' = 'point'; // For now, default to point analysis
+      const bufferRadius = 2; // 2km radius for enhanced coverage
+      
+      // Step 3: Generate analysis grid if needed
+      const centerPoint = { lat: coordinates.lat, lon: coordinates.lng };
+      const gridPoints = [centerPoint]; // For point analysis, use single point
+      
+      const geolocationData = {
+        centerPoint,
+        boundingBox: calculateBoundingBox(centerPoint, bufferRadius),
+        gridPoints,
+        bufferRadius,
+        analysisType,
+        estimatedArea: Math.PI * Math.pow(bufferRadius, 2) * 100 // Convert km² to hectares
+      };
+      
+      console.log('🌍 Enhanced analysis configuration:', geolocationData);
+      
+      // Step 4: Perform enhanced analysis or fallback to standard
+      let result;
+      try {
+        result = await performEnhancedAnalysis(geolocationData);
+        console.log('✅ Enhanced analysis completed:', result);
+      } catch (enhancedError) {
+        console.warn('⚠️ Enhanced analysis failed, falling back to standard:', enhancedError);
+        result = await analyzeProject(projectId, coordinates);
+        console.log('✅ Standard analysis completed:', result);
+      }
       
       setData(result);
-      toast({
-        title: "Analysis Complete",
-        description: "Satellite data analysis completed successfully",
-      });
       
-      console.log('🎉 Analysis process complete!');
-    } catch (err) {
-      console.error('❌ Satellite analysis failed:', err);
-      console.error('🔍 Error details:', {
-        name: err instanceof Error ? err.name : 'Unknown',
-        message: err instanceof Error ? err.message : 'Unknown error',
-        stack: err instanceof Error ? err.stack : 'No stack trace'
-      });
-      
-      const errorMessage = err instanceof Error ? err.message : 'Failed to analyze satellite data';
+      // Show success toast with enhanced info
+      if (result.coverage_quality) {
+        toast({
+          title: "Enhanced Analysis Complete",
+          description: `Coverage: ${result.coverage_quality}, NDVI: ${result.ndvi?.mean?.toFixed(3) || result.ndvi_summary?.mean?.toFixed(3) || 'N/A'}, Carbon: ${result.carbon_stock?.total_tons?.toFixed(1) || 'N/A'} tons`,
+        });
+      } else {
+        toast({
+          title: "Analysis Complete",
+          description: `NDVI: ${result.ndvi_summary?.mean?.toFixed(3) || 'N/A'}, Carbon: ${result.carbon_stock?.total_tons?.toFixed(1) || 'N/A'} tons`,
+        });
+      }
+    } catch (error) {
+      console.error('❌ Analysis failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Analysis failed';
       setError(errorMessage);
       toast({
         title: "Analysis Failed",
-        description: `Analysis failed: ${errorMessage}`,
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
       setLoading(false);
-      console.log('🏁 Analysis attempt finished (loading set to false)');
     }
   };
 
