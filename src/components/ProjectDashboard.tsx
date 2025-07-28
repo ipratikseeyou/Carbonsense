@@ -72,36 +72,67 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ projectId })
 
   const runAnalysis = async () => {
     if (!project?.coordinates) {
-      setError('Project coordinates not available');
+      toast({
+        title: 'Error',
+        description: 'Project coordinates not available',
+        variant: 'destructive',
+      });
       return;
     }
 
     try {
       setAnalyzing(true);
       setError(null);
-      
-      console.log('Starting analysis for project:', projectId);
-      console.log('Project coordinates:', project.coordinates);
-      
+
       const [lat, lon] = project.coordinates.split(',').map(Number);
-      console.log('Parsed coordinates:', { lat, lon });
       
-      // Use testSatelliteLocation with coordinates since AWS backend doesn't have the project
-      const result = await carbonApi.testSatelliteLocation(lat, lon);
+      if (isNaN(lat) || isNaN(lon)) {
+        throw new Error('Invalid coordinates format');
+      }
+
+      console.log('Analyzing location:', { lat, lon, project: project.name });
+      
+      // Use the new coordinate-based analysis
+      const result = await carbonApi.analyzeWithCoordinates(lat, lon, 'tropical');
+      
       console.log('Analysis result:', result);
       
       setAnalysis(result);
+      
       toast({
-        title: 'Analysis Complete',
-        description: 'Satellite analysis has been completed successfully',
+        title: 'Analysis Complete', 
+        description: `Found ${result.carbon_stock?.total_carbon_tons?.toLocaleString() || 0} tons of carbon`,
       });
     } catch (err) {
       console.error('Analysis error:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to analyze project';
-      setError(errorMessage);
+      setError(err instanceof Error ? err.message : 'Analysis failed');
       toast({
         title: 'Analysis Failed',
-        description: errorMessage,
+        description: err instanceof Error ? err.message : 'Failed to analyze project',
+        variant: 'destructive',
+      });
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  const testAmazonLocation = async () => {
+    try {
+      setAnalyzing(true);
+      console.log('Testing Amazon coordinates...');
+      
+      const result = await carbonApi.analyzeWithCoordinates(-3.4653, -62.2159, 'tropical');
+      console.log('Amazon test result:', result);
+      
+      toast({
+        title: 'Test Complete',
+        description: `Amazon test: ${result.carbon_stock?.total_carbon_tons?.toLocaleString() || 0} tons`,
+      });
+    } catch (err) {
+      console.error('Test failed:', err);
+      toast({
+        title: 'Test Failed',
+        description: 'Amazon location test failed',
         variant: 'destructive',
       });
     } finally {
@@ -259,6 +290,22 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ projectId })
                   <Download className="h-4 w-4" />
                   Download Report
                 </>
+              )}
+            </Button>
+
+            <Button
+              onClick={testAmazonLocation}
+              disabled={analyzing}
+              variant="secondary"
+              className="flex items-center gap-2"
+            >
+              {analyzing ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Testing...
+                </>
+              ) : (
+                'Test Amazon Location'
               )}
             </Button>
           </div>
